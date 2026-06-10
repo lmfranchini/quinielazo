@@ -1,4 +1,19 @@
 <?php
+// Configuración de sesión persistente (1 año)
+$session_lifetime = 31536000; // 1 año en segundos
+ini_set('session.cookie_lifetime', $session_lifetime);
+ini_set('session.gc_maxlifetime', $session_lifetime);
+
+// Directorio de sesiones personalizado para evitar la limpieza automática del servidor
+$session_dir = __DIR__ . '/sessions';
+if (!is_dir($session_dir)) {
+    @mkdir($session_dir, 0700, true);
+    @file_put_contents($session_dir . '/.htaccess', "Order Deny,Allow\nDeny from all\n");
+}
+if (is_writable($session_dir)) {
+    ini_set('session.save_path', $session_dir);
+}
+
 session_start();
 
 define('DB_HOST', 'TU_HOST_DE_BD');
