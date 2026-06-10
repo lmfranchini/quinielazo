@@ -143,7 +143,7 @@ foreach ($matches as $match) {
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
                   <span style="font-size: 1.1rem; line-height: 1;">🏆</span>
-                  <div><strong>Ganador de la Quiniela:</strong> La quiniela abarca todo el certamen, por lo que el ganador definitivo se determinará al concluir la Gran Final del Mundial.</div>
+                  <div><strong>Ganador de la Quiniela:</strong> La quiniela abarca todo el certamen (un total de 104 partidos), por lo que el ganador definitivo se determinará al concluir la Gran Final del Mundial.</div>
                 </li>
               </ul>
             </div>
