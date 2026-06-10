@@ -1,0 +1,26 @@
+# Proteger archivos sensibles
+<Files "config.php">
+  Order Allow,Deny
+  Deny from all
+</Files>
+
+<Files "schema.sql">
+  Order Allow,Deny
+  Deny from all
+</Files>
+
+<Files "setup.php">
+  Order Allow,Deny
+  Deny from all
+</Files>
+
+# Deshabilitar listado de directorios
+Options -Indexes
+
+# Charset
+AddDefaultCharset UTF-8
+
+# Redirect HTTP to HTTPS (descomentar si tienes SSL)
+# RewriteEngine On
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
