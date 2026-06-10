@@ -111,7 +111,7 @@ foreach ($matches as $match) {
           </h3>
           <span id="rules-toggle-icon" style="font-size: 0.9rem; color: var(--accent-color); transition: all 0.3s ease; background: rgba(0, 255, 136, 0.1); padding: 0.3rem 0.6rem; border-radius: 6px;">Ocultar ▲</span>
         </div>
-        <div id="rules-content" style="max-height: 500px; overflow: hidden; transition: max-height 0.4s ease, opacity 0.4s ease, margin-top 0.4s ease; opacity: 1; margin-top: 1rem;">
+        <div id="rules-content" style="max-height: 1000px; overflow: hidden; transition: max-height 0.4s ease, opacity 0.4s ease, margin-top 0.4s ease; opacity: 1; margin-top: 1rem;">
           <div style="padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; font-size: 0.88rem; line-height: 1.5; color: var(--text-secondary);">
             <div>
               <h4 style="color: white; margin-bottom: 0.5rem; font-weight: 700;">📈 Sistema de Puntuación</h4>
@@ -675,7 +675,7 @@ foreach ($matches as $match) {
       const content = document.getElementById('rules-content');
       const icon = document.getElementById('rules-toggle-icon');
       if (content.style.maxHeight === '0px' || content.style.maxHeight === '') {
-        content.style.maxHeight = '500px';
+        content.style.maxHeight = '1000px';
         content.style.opacity = '1';
         content.style.marginTop = '1rem';
         icon.textContent = 'Ocultar ▲';
