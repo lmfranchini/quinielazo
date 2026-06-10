@@ -141,6 +141,10 @@ foreach ($matches as $match) {
                   <span style="font-size: 1.1rem; line-height: 1;">⚡</span>
                   <div><strong>Puntos en Vivo:</strong> Durante los partidos en vivo verás tus puntos proyectados. Se confirman oficialmente al terminar el encuentro.</div>
                 </li>
+                <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                  <span style="font-size: 1.1rem; line-height: 1;">🏆</span>
+                  <div><strong>Ganador de la Quiniela:</strong> La quiniela abarca todo el certamen, por lo que el ganador definitivo se determinará al concluir la Gran Final del Mundial.</div>
+                </li>
               </ul>
             </div>
           </div>
