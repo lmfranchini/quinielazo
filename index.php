@@ -103,6 +103,50 @@ foreach ($matches as $match) {
 
     <!-- Contenido Principal (Partidos / Tablas de Grupos) -->
     <section>
+      <!-- Sección de Reglas del Juego -->
+      <div class="glass-panel rules-panel" style="margin-bottom: 2rem; padding: 1.5rem; border-color: rgba(0, 255, 136, 0.2);">
+        <div class="rules-header" onclick="toggleRules()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--accent-color); display: flex; align-items: center; gap: 0.6rem;">
+            📜 Reglas del Juego
+          </h3>
+          <span id="rules-toggle-icon" style="font-size: 0.9rem; color: var(--accent-color); transition: all 0.3s ease; background: rgba(0, 255, 136, 0.1); padding: 0.3rem 0.6rem; border-radius: 6px;">Ocultar ▲</span>
+        </div>
+        <div id="rules-content" style="max-height: 500px; overflow: hidden; transition: max-height 0.4s ease, opacity 0.4s ease, margin-top 0.4s ease; opacity: 1; margin-top: 1rem;">
+          <div style="padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; font-size: 0.88rem; line-height: 1.5; color: var(--text-secondary);">
+            <div>
+              <h4 style="color: white; margin-bottom: 0.5rem; font-weight: 700;">📈 Sistema de Puntuación</h4>
+              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
+                <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                  <span style="font-size: 1.1rem; line-height: 1;">🎯</span>
+                  <div><strong>Marcador Exacto (+6 pts):</strong> Acierto del marcador exacto del partido. Ej. Pronóstico: 2-1 | Resultado: 2-1.</div>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                  <span style="font-size: 1.1rem; line-height: 1;">✓</span>
+                  <div><strong>Resultado Correcto (+3 pts):</strong> Acierto de ganador o empate, pero no del marcador exacto. Ej. Pronóstico: 2-1 | Resultado: 1-0.</div>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                  <span style="font-size: 1.1rem; line-height: 1;">✗</span>
+                  <div><strong>Fallo (0 pts):</strong> Si no se acierte el ganador ni el empate.</div>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 style="color: white; margin-bottom: 0.5rem; font-weight: 700;">⏰ Cierre y Sincronización</h4>
+              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
+                <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                  <span style="font-size: 1.1rem; line-height: 1;">🔒</span>
+                  <div><strong>Cierre automático:</strong> Los pronósticos se bloquean automáticamente <strong>1 hora antes</strong> del inicio oficial de cada partido.</div>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                  <span style="font-size: 1.1rem; line-height: 1;">⚡</span>
+                  <div><strong>Puntos en Vivo:</strong> Durante los partidos en vivo verás tus puntos proyectados. Se confirman oficialmente al terminar el encuentro.</div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="section-header-tabs">
         <button class="tab-btn active" id="btn-tab-matches" onclick="switchTab('matches')">⚽ Partidos y Pronósticos</button>
         <button class="tab-btn" id="btn-tab-groups" onclick="switchTab('groups')">📊 Grupos del Mundial</button>
@@ -621,6 +665,27 @@ foreach ($matches as $match) {
   <script>
     // Indicar al JS si hay partidos en vivo para activar el polling
     window.HAS_LIVE = <?= $hasLive ? 'true' : 'false' ?>;
+
+    // Control de la sección de reglas
+    function toggleRules() {
+      const content = document.getElementById('rules-content');
+      const icon = document.getElementById('rules-toggle-icon');
+      if (content.style.maxHeight === '0px' || content.style.maxHeight === '') {
+        content.style.maxHeight = '500px';
+        content.style.opacity = '1';
+        content.style.marginTop = '1rem';
+        icon.textContent = 'Ocultar ▲';
+        icon.style.color = 'var(--accent-color)';
+        icon.style.background = 'rgba(0, 255, 136, 0.1)';
+      } else {
+        content.style.maxHeight = '0px';
+        content.style.opacity = '0';
+        content.style.marginTop = '0';
+        icon.textContent = 'Mostrar ▼';
+        icon.style.color = 'var(--text-secondary)';
+        icon.style.background = 'rgba(255,255,255,0.05)';
+      }
+    }
 
     // Control de pestañas (Partidos / Grupos)
     function switchTab(tabId) {
