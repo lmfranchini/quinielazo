@@ -14,7 +14,17 @@ if (is_writable($session_dir)) {
     ini_set('session.save_path', $session_dir);
 }
 
+// Configurar parámetros de la cookie de sesión
+if (function_exists('session_set_cookie_params')) {
+    session_set_cookie_params($session_lifetime, '/');
+}
+
 session_start();
+
+// Renovar la cookie en el navegador para forzar la persistencia a 1 año
+if (isset($_COOKIE[session_name()])) {
+    setcookie(session_name(), $_COOKIE[session_name()], time() + $session_lifetime, '/');
+}
 
 define('DB_HOST', 'TU_HOST_DE_BD');
 define('DB_PORT', '3306');
