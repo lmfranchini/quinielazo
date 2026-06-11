@@ -73,7 +73,7 @@ foreach ($matches as $match) {
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=2.3" />
+  <link rel="stylesheet" href="css/style.css?v=2.4" />
 </head>
 <body class="fade-in">
 
@@ -813,6 +813,6 @@ foreach ($matches as $match) {
     </div>
   </div>
 
-  <script src="js/app.js?v=2.3"></script>
+  <script src="js/app.js?v=2.4"></script>
 </body>
 </html>
