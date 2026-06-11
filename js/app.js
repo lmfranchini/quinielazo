@@ -130,14 +130,48 @@ function updateMatches(matches) {
         }
       }
 
-      // Actualizar minuto
-      const liveInd = card.querySelector('.live-indicator span:last-child');
-      if (liveInd && m.status === 'LIVE') {
-        liveInd.textContent = `EN VIVO ${m.minute ? "· " + m.minute + "'" : ''}`;
+      // Actualizar minuto, estado y badges de en vivo
+      let liveInd = card.querySelector('.live-indicator');
+      if (m.status === 'LIVE') {
+        if (!liveInd) {
+          liveInd = document.createElement('div');
+          liveInd.className = 'live-indicator';
+          card.insertBefore(liveInd, card.querySelector('.match-header'));
+        } else {
+          liveInd.className = 'live-indicator';
+        }
+        liveInd.innerHTML = `<span class="live-dot"></span><span>EN VIVO ${m.minute ? "· " + m.minute + "'" : ''}</span>`;
+      } else if (m.status === 'HALFTIME') {
+        if (!liveInd) {
+          liveInd = document.createElement('div');
+          liveInd.className = 'live-indicator live-indicator--ht';
+          card.insertBefore(liveInd, card.querySelector('.match-header'));
+        } else {
+          liveInd.className = 'live-indicator live-indicator--ht';
+        }
+        liveInd.innerHTML = '<span>MEDIO TIEMPO</span>';
+      } else {
+        if (liveInd) {
+          liveInd.remove();
+        }
       }
-      const minEl = document.getElementById(`minute-${m.id}`);
-      if (minEl && m.status === 'LIVE') {
-        minEl.textContent = m.minute ? `Min ${m.minute}'` : 'EN VIVO';
+
+      // Actualizar la parte central de estado (Minuto / VS / FINAL)
+      const centerStatus = card.querySelector('.match-center-status');
+      if (centerStatus) {
+        if (m.status === 'LIVE') {
+          const minText = m.minute ? `Min ${m.minute}'` : 'EN VIVO';
+          centerStatus.innerHTML = `
+            <div class="live-dot" style="margin-bottom:0.2rem"></div>
+            <div class="match-time-live" id="minute-${m.id}">${minText}</div>
+          `;
+        } else if (m.status === 'HALFTIME') {
+          centerStatus.innerHTML = `<div class="match-time-ht">MEDIO TIEMPO</div>`;
+        } else if (m.isFinished || m.status === 'FINISHED') {
+          centerStatus.innerHTML = `<div class="match-time-final">FINAL</div>`;
+        } else {
+          centerStatus.innerHTML = `<div class="vs">VS</div>`;
+        }
       }
 
       // Actualizar goleadores en tiempo real

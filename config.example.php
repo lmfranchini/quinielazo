@@ -190,6 +190,10 @@ function formatMatchDay($matchDate) {
  */
 function calculatePoints($predA, $predB, $realA, $realB) {
     if (!is_numeric($realA) || !is_numeric($realB)) return 0;
+    $predA = (int)$predA;
+    $predB = (int)$predB;
+    $realA = (int)$realA;
+    $realB = (int)$realB;
     if ($predA === $realA && $predB === $realB) return 6;
     $predResult = ($predA > $predB) ? 1 : (($predA < $predB) ? -1 : 0);
     $realResult = ($realA > $realB) ? 1 : (($realA < $realB) ? -1 : 0);
