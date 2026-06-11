@@ -82,7 +82,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=2.5" />
+  <link rel="stylesheet" href="css/style.css?v=2.6" />
 </head>
 <body class="fade-in">
 
@@ -165,7 +165,7 @@ $totalPrizePool = $paidCount * 500;
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
                   <span style="font-size: 1.1rem; line-height: 1;">🏆</span>
-                  <div><strong>Ganador de la Bolsa:</strong> Se la llevará el participante mejor posicionado que tenga la marca dorada ($), incluso si el ganador absoluto del torneo (1º lugar) no aportó.</div>
+                  <div><strong>Solo Gana el 1º Lugar:</strong> La bolsa acumulada se entregará únicamente al participante mejor posicionado que tenga la marca dorada ($). No hay premios para el 2º ni 3º lugar (solo gana el primer lugar de los participantes con pago).</div>
                 </li>
               </ul>
             </div>
@@ -676,7 +676,7 @@ $totalPrizePool = $paidCount * 500;
       </div>
 
       <div class="leaderboard" id="leaderboard">
-        <?php $medals = ['🥇','🥈','🥉']; ?>
+        <?php $medals = ['🥇']; ?>
         <?php foreach ($leaderboard as $i => $u): ?>
           <div class="leaderboard-row <?= $i < 3 ? 'top-'.($i+1) : '' ?>">
             <div class="lb-rank"><?= $medals[$i] ?? ($i + 1) ?></div>
@@ -839,6 +839,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=2.5"></script>
+  <script src="js/app.js?v=2.6"></script>
 </body>
 </html>

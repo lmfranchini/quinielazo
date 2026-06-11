@@ -214,7 +214,7 @@ function updateLeaderboard(leaderboard) {
     participantsEl.textContent = `${paidCount} ${paidCount === 1 ? 'participante' : 'participantes'} de $500 pesos`;
   }
 
-  const medals = ['🥇', '🥈', '🥉'];
+  const medals = ['🥇'];
 
   container.innerHTML = leaderboard.map((u, i) => {
     const topClass = i < 3 ? `top-${i + 1}` : '';
