@@ -33,9 +33,7 @@ foreach ($allPreds as $ap) {
     if ($ap['isFinished']) {
         $userProjected[$uid]['confirmed'] += (int)$ap['confirmedPts'];
     } elseif ($ap['status'] === 'LIVE' || $ap['status'] === 'HALFTIME') {
-        $livePts = calculatePoints((int)$ap['predA'], (int)$ap['predB'],
-            $ap['mScoreA'] !== null ? (int)$ap['mScoreA'] : null,
-            $ap['mScoreB'] !== null ? (int)$ap['mScoreB'] : null);
+        $livePts = calculatePoints((int)$ap['predA'], (int)$ap['predB'], $ap['mScoreA'], $ap['mScoreB']);
         $userProjected[$uid]['projected'] += $livePts;
     }
 }
@@ -206,7 +204,7 @@ $totalPrizePool = $paidCount * 500;
                   
                   // Puntos proyectados para este partido
                   $projPts = 0;
-                  if ($pred && ($isLive || $isFinished) && $match['scoreA'] !== null) {
+                  if ($pred && ($isLive || $isFinished) && is_numeric($match['scoreA'])) {
                       $projPts = calculatePoints((int)$pred['scoreA'], (int)$pred['scoreB'], (int)$match['scoreA'], (int)$match['scoreB']);
                   }
                   $hasStarted = ($isLive || $isFinished || $status === 'HALFTIME');

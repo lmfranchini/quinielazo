@@ -189,7 +189,7 @@ function formatMatchDay($matchDate) {
  * 6 pts = marcador exacto, 3 pts = resultado correcto (ganador o empate), 0 = fallo
  */
 function calculatePoints($predA, $predB, $realA, $realB) {
-    if ($realA === null || $realB === null) return 0;
+    if (!is_numeric($realA) || !is_numeric($realB)) return 0;
     if ($predA === $realA && $predB === $realB) return 6;
     $predResult = ($predA > $predB) ? 1 : (($predA < $predB) ? -1 : 0);
     $realResult = ($realA > $realB) ? 1 : (($realA < $realB) ? -1 : 0);
@@ -294,7 +294,7 @@ function getGroupStandings($db) {
         $scoreA = $m['scoreA'];
         $scoreB = $m['scoreB'];
         
-        if ($scoreA !== null && $scoreB !== null) {
+        if (is_numeric($scoreA) && is_numeric($scoreB)) {
             $grpA = null;
             $grpB = null;
             
@@ -440,7 +440,7 @@ function getTournamentStats($db) {
         if (!isset($teamConceded[$teamA])) $teamConceded[$teamA] = 0;
         if (!isset($teamConceded[$teamB])) $teamConceded[$teamB] = 0;
         
-        if ($scoreA !== null && $scoreB !== null) {
+        if (is_numeric($scoreA) && is_numeric($scoreB)) {
             $pj++;
             $goals = (int)$scoreA + (int)$scoreB;
             $totalGoals += $goals;

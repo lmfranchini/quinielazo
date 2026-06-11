@@ -1,5 +1,7 @@
 <?php
 ob_start();
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
 /**
  * Endpoint AJAX – Devuelve datos en vivo para actualizar el dashboard sin recargar.
  * Retorna: partidos con marcadores actuales + clasificación con puntos proyectados.
@@ -38,8 +40,7 @@ foreach ($matches as $m) {
     if ($pred && ($status === 'LIVE' || $status === 'HALFTIME' || $status === 'FINISHED')) {
         $projectedPts = calculatePoints(
             (int)$pred['scoreA'], (int)$pred['scoreB'],
-            $m['scoreA'] !== null ? (int)$m['scoreA'] : null,
-            $m['scoreB'] !== null ? (int)$m['scoreB'] : null
+            $m['scoreA'], $m['scoreB']
         );
     }
     
@@ -51,8 +52,8 @@ foreach ($matches as $m) {
         'id'           => (int)$m['id'],
         'teamA'        => $m['teamA'],
         'teamB'        => $m['teamB'],
-        'scoreA'       => $m['scoreA'] !== null ? (int)$m['scoreA'] : null,
-        'scoreB'       => $m['scoreB'] !== null ? (int)$m['scoreB'] : null,
+        'scoreA'       => is_numeric($m['scoreA']) ? (int)$m['scoreA'] : null,
+        'scoreB'       => is_numeric($m['scoreB']) ? (int)$m['scoreB'] : null,
         'status'       => $status,
         'minute'       => $m['matchMinute'],
         'isFinished'   => (bool)$m['isFinished'],
@@ -93,8 +94,7 @@ foreach ($allPreds as $ap) {
         // Puntos proyectados (partido en vivo)
         $livePts = calculatePoints(
             (int)$ap['predA'], (int)$ap['predB'],
-            $ap['matchScoreA'] !== null ? (int)$ap['matchScoreA'] : null,
-            $ap['matchScoreB'] !== null ? (int)$ap['matchScoreB'] : null
+            $ap['matchScoreA'], $ap['matchScoreB']
         );
         $userPoints[$uid]['projected'] += $livePts;
     }

@@ -141,13 +141,23 @@ foreach ($allEvents as $event) {
     $isFinished = ($ourStatus === 'FINISHED') ? 1 : 0;
     $eventId = isset($event['id']) ? intval($event['id']) : 0;
     
-    // Obtener detalles de goleadores si está en vivo o terminado
     // Obtener detalles de goleadores y tarjetas si está en vivo o terminado
     $scorersDataJson = isset($dbMatch['scorersData']) ? $dbMatch['scorersData'] : null;
     $cardsDataJson = isset($dbMatch['cardsData']) ? $dbMatch['cardsData'] : null;
     if ($ourStatus === 'LIVE' || $ourStatus === 'HALFTIME' || $ourStatus === 'FINISHED') {
-        // Solo consultar si no está finalizado en DB o si no tenemos datos aún
-        if ((!$dbMatch['isFinished'] || $scorersDataJson === null || $cardsDataJson === null) && $eventId > 0 && !empty($homeTeamId) && !empty($awayTeamId)) {
+        // Si hay goles pero no tenemos goleadores registrados, debemos forzar la consulta
+        $hasScorers = false;
+        if ($scorersDataJson) {
+            $dec = json_decode($scorersDataJson, true);
+            if (!empty($dec['teamA']) || !empty($dec['teamB'])) {
+                $hasScorers = true;
+            }
+        }
+        $totalGoals = ($scoreHome !== null && $scoreAway !== null) ? ($scoreHome + $scoreAway) : 0;
+        $needsScorers = ($totalGoals > 0 && !$hasScorers);
+
+        // Solo consultar si no está finalizado en DB o si no tenemos datos aún o si faltan goleadores
+        if ((!$dbMatch['isFinished'] || $scorersDataJson === null || $cardsDataJson === null || $needsScorers) && $eventId > 0 && !empty($homeTeamId) && !empty($awayTeamId)) {
             $details = fetchEspnDetails($eventId, $homeTeamId, $awayTeamId);
             $scorersDataJson = json_encode($details['scorers']);
             $cardsDataJson = json_encode($details['cards']);
@@ -263,49 +273,17 @@ function fetchEspnDetails($eventId, $homeTeamId, $awayTeamId) {
     
     $data = json_decode($response, true);
     
-    // Goleadores
-    if (isset($data['scoringPlays'])) {
-        foreach ($data['scoringPlays'] as $play) {
-            $teamId = isset($play['team']['id']) ? $play['team']['id'] : '';
-            $playerName = isset($play['athlete']['displayName']) ? $play['athlete']['displayName'] : '';
-            $minute = isset($play['clock']['displayValue']) ? $play['clock']['displayValue'] : '';
-            
-            if (empty($playerName)) continue;
-            
-            $typeText = isset($play['type']['text']) ? $play['type']['text'] : 'Goal';
-            $suffix = '';
-            if (stripos($typeText, 'penalty') !== false) {
-                $suffix = ' (p.)';
-            } elseif (stripos($typeText, 'own goal') !== false || stripos($typeText, 'own-goal') !== false || stripos($typeText, 'auto') !== false) {
-                $suffix = ' (ag.)';
-            }
-            
-            $scorerStr = $playerName . " " . $minute . $suffix;
-            
-            if ($teamId == $homeTeamId) {
-                $scorers['teamA'][] = $scorerStr;
-            } elseif ($teamId == $awayTeamId) {
-                $scorers['teamB'][] = $scorerStr;
-            }
-        }
-    }
-    
-    // Tarjetas
     if (isset($data['keyEvents'])) {
         foreach ($data['keyEvents'] as $event) {
             $typeText = isset($event['type']['text']) ? $event['type']['text'] : '';
-            $isYellow = (stripos($typeText, 'Yellow Card') !== false);
-            $isRed = (stripos($typeText, 'Red Card') !== false);
-            
-            if (!$isYellow && !$isRed) continue;
-            
+            $typeType = isset($event['type']['type']) ? $event['type']['type'] : '';
             $teamId = isset($event['team']['id']) ? $event['team']['id'] : '';
-            $playerName = '';
+            $minute = isset($event['clock']['displayValue']) ? $event['clock']['displayValue'] : '';
             
+            $playerName = '';
             if (isset($event['participants'][0]['athlete']['displayName'])) {
                 $playerName = $event['participants'][0]['athlete']['displayName'];
             }
-            
             if (empty($playerName) && isset($event['text'])) {
                 $parts = explode(' (', $event['text']);
                 $playerName = trim($parts[0]);
@@ -313,15 +291,37 @@ function fetchEspnDetails($eventId, $homeTeamId, $awayTeamId) {
             
             if (empty($playerName)) continue;
             
-            $minute = isset($event['clock']['displayValue']) ? $event['clock']['displayValue'] : '';
-            $cardStr = $playerName . " " . $minute;
+            // 1. Goles
+            $isGoal = (stripos($typeText, 'Goal') !== false || stripos($typeType, 'goal') !== false);
+            if ($isGoal) {
+                $suffix = '';
+                if (stripos($typeText, 'penalty') !== false) {
+                    $suffix = ' (p.)';
+                } elseif (stripos($typeText, 'own goal') !== false || stripos($typeText, 'own-goal') !== false || stripos($typeText, 'auto') !== false) {
+                    $suffix = ' (ag.)';
+                }
+                
+                $scorerStr = $playerName . " " . $minute . $suffix;
+                if ($teamId == $homeTeamId) {
+                    $scorers['teamA'][] = $scorerStr;
+                } elseif ($teamId == $awayTeamId) {
+                    $scorers['teamB'][] = $scorerStr;
+                }
+            }
             
-            $cardType = $isYellow ? 'yellow' : 'red';
+            // 2. Tarjetas
+            $isYellow = (stripos($typeText, 'Yellow Card') !== false || stripos($typeType, 'yellow-card') !== false);
+            $isRed = (stripos($typeText, 'Red Card') !== false || stripos($typeType, 'red-card') !== false);
             
-            if ($teamId == $homeTeamId) {
-                $cards['teamA'][$cardType][] = $cardStr;
-            } elseif ($teamId == $awayTeamId) {
-                $cards['teamB'][$cardType][] = $cardStr;
+            if ($isYellow || $isRed) {
+                $cardStr = $playerName . " " . $minute;
+                $cardType = $isYellow ? 'yellow' : 'red';
+                
+                if ($teamId == $homeTeamId) {
+                    $cards['teamA'][$cardType][] = $cardStr;
+                } elseif ($teamId == $awayTeamId) {
+                    $cards['teamB'][$cardType][] = $cardStr;
+                }
             }
         }
     }

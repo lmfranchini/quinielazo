@@ -68,7 +68,7 @@ function initLivePolling() {
 
 async function fetchLiveData() {
   try {
-    const res = await fetch('api/live_data.php');
+    const res = await fetch('api/live_data.php?t=' + Date.now());
     const data = await res.json();
     if (data.error) return;
 
