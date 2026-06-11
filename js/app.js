@@ -141,8 +141,9 @@ function updateMatches(matches) {
       }
 
       // Actualizar goleadores en tiempo real
-      const scorersAEl = card.querySelector('.team:first-child .team-scorers');
-      const scorersBEl = card.querySelector('.team:last-child .team-scorers');
+      const teams = card.querySelectorAll('.team');
+      const scorersAEl = teams[0] ? teams[0].querySelector('.team-scorers') : null;
+      const scorersBEl = teams[1] ? teams[1].querySelector('.team-scorers') : null;
       if (scorersAEl && scorersBEl) {
         if (m.scorers) {
           scorersAEl.innerHTML = (m.scorers.teamA || []).map(sc => `<div class="scorer-item">⚽ ${escapeHtml(sc)}</div>`).join('');
@@ -683,4 +684,14 @@ function renderModalSubs(subs) {
   
   renderSubsColumn(subs.teamA, 'subs-timeline-a');
   renderSubsColumn(subs.teamB, 'subs-timeline-b');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }

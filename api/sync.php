@@ -114,6 +114,11 @@ foreach ($allEvents as $event) {
     $espnName   = isset($espnStatus['type']['name']) ? $espnStatus['type']['name'] : '';
     $ourStatus  = mapEspnStatus($espnState, $espnName);
     $minute     = isset($espnStatus['displayClock']) ? $espnStatus['displayClock'] : null;
+
+    if ($ourStatus === 'SCHEDULED') {
+        $scoreHome = null;
+        $scoreAway = null;
+    }
     
     // Limpiar el minuto
     if ($minute) {
