@@ -82,7 +82,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=2.6" />
+  <link rel="stylesheet" href="css/style.css?v=2.7" />
 </head>
 <body class="fade-in">
 
@@ -166,6 +166,10 @@ $totalPrizePool = $paidCount * 500;
                 <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
                   <span style="font-size: 1.1rem; line-height: 1;">🏆</span>
                   <div><strong>Solo Gana el 1º Lugar:</strong> La bolsa acumulada se entregará únicamente al participante mejor posicionado que tenga la marca dorada ($). No hay premios para el 2º ni 3º lugar (solo gana el primer lugar de los participantes con pago).</div>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                  <span style="font-size: 1.1rem; line-height: 1;">⚖️</span>
+                  <div><strong>Empate de Puntos:</strong> Si dos o más participantes elegibles terminan empatados en el primer lugar con el mismo número de puntos al finalizar la quiniela, la bolsa acumulada se repartirá en partes iguales entre ellos.</div>
                 </li>
               </ul>
             </div>
@@ -839,6 +843,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=2.6"></script>
+  <script src="js/app.js?v=2.7"></script>
 </body>
 </html>
