@@ -1413,3 +1413,129 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield; /* Firefox */
 }
+
+/* ── Indicador de pago dorado ($) ── */
+.paid-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffe066, #f5b041);
+  color: #1a0f00;
+  font-weight: 900;
+  font-size: 0.72rem;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  margin-left: 0.5rem;
+  box-shadow: 0 0 8px rgba(245, 176, 65, 0.6), inset 0 1px 1px rgba(255,255,255,0.4);
+  vertical-align: middle;
+  text-shadow: 0 0.5px 0.5px rgba(255,255,255,0.4);
+  animation: pulseGold 2s infinite ease-in-out;
+  cursor: help;
+}
+
+@keyframes pulseGold {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 6px rgba(245, 176, 65, 0.5);
+  }
+  50% {
+    transform: scale(1.12);
+    box-shadow: 0 0 14px rgba(245, 176, 65, 0.9);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 6px rgba(245, 176, 65, 0.5);
+  }
+}
+
+/* ── Estilos de interruptor (Switch) y lista de usuarios en admin.php ── */
+.admin-users-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.admin-user-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.25s ease;
+}
+.admin-user-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.admin-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.admin-user-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: white;
+}
+.admin-user-pts {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.admin-user-actions {
+  display: flex;
+  align-items: center;
+}
+
+/* Custom CSS Toggle Switch */
+.switch-container {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.switch-container input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  transition: .3s;
+  border-radius: 24px;
+}
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+input:checked + .switch-slider {
+  background-color: var(--accent-color);
+  border-color: transparent;
+}
+input:focus + .switch-slider {
+  box-shadow: 0 0 1px var(--accent-color);
+}
+input:checked + .switch-slider:before {
+  transform: translateX(20px);
+}
+input:disabled + .switch-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

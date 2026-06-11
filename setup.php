@@ -87,6 +87,19 @@ try {
         }
     }
 
+    echo "\n🔄 Verificando y agregando columnas en vivo en 'User'...\n";
+    try {
+        $check = $db->query("SHOW COLUMNS FROM `User` LIKE 'hasPaid'")->fetch();
+        if (!$check) {
+            $db->exec("ALTER TABLE `User` ADD COLUMN `hasPaid` TINYINT(1) NOT NULL DEFAULT 0");
+            echo "   ➕ Columna 'hasPaid' agregada a 'User'.\n";
+        } else {
+            echo "   ✓ Columna 'hasPaid' ya existe.\n";
+        }
+    } catch (PDOException $ex) {
+        echo "   ⚠️ No se pudo verificar/agregar 'hasPaid' en 'User': " . $ex->getMessage() . "\n";
+    }
+
     // Verificar tablas
     echo "\n📊 Verificando tablas...\n";
     $tables = $db->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);

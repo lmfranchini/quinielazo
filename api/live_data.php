@@ -68,7 +68,7 @@ foreach ($matches as $m) {
 }
 
 // ── 4. Clasificación con puntos confirmados + proyectados ──
-$users = $db->query("SELECT id, username, points FROM `User` WHERE role != 'ADMIN' ORDER BY id")->fetchAll();
+$users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role != 'ADMIN' ORDER BY id")->fetchAll();
 
 // Obtener TODOS los pronósticos para calcular puntos proyectados
 $allPreds = $db->query("
@@ -111,6 +111,7 @@ foreach ($users as $u) {
         'projected' => $pts['projected'],
         'total'     => $pts['confirmed'] + $pts['projected'],
         'isYou'     => ($uid === $userId),
+        'hasPaid'   => (bool)$u['hasPaid'],
     ];
 }
 

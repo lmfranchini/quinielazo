@@ -206,6 +206,7 @@ function updateLeaderboard(leaderboard) {
   container.innerHTML = leaderboard.map((u, i) => {
     const topClass = i < 3 ? `top-${i + 1}` : '';
     const youTag = u.isYou ? '<span style="font-size:0.7rem; color:var(--accent-color)"> (tú)</span>' : '';
+    const paidTag = u.hasPaid ? ' <span class="paid-indicator" title="Participa por la bolsa de premios">$</span>' : '';
     const projectedTag = u.projected > 0
       ? `<div class="lb-projected">+${u.projected} en vivo</div>`
       : '';
@@ -213,7 +214,7 @@ function updateLeaderboard(leaderboard) {
     return `
       <div class="leaderboard-row ${topClass}">
         <div class="lb-rank">${medals[i] ?? (i + 1)}</div>
-        <div class="lb-name">${escapeHtml(u.username)}${youTag}</div>
+        <div class="lb-name">${escapeHtml(u.username)}${paidTag}${youTag}</div>
         <div class="lb-score-block">
           <div class="lb-points">${u.total}</div>
           <div class="lb-pts-label">pts</div>

@@ -31,6 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Obtener partidos ordenados
 $matches = $db->query("SELECT * FROM `Match` ORDER BY date ASC")->fetchAll();
+// Obtener usuarios ordenados
+$users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role != 'ADMIN' ORDER BY username ASC")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -123,6 +125,37 @@ $matches = $db->query("SELECT * FROM `Match` ORDER BY date ASC")->fetchAll();
 
     </div>
 
+    <!-- Gestionar Participantes -->
+    <div class="glass-panel" style="margin-top:2rem">
+      <h2 class="admin-section-title">👥 Gestionar Participantes y Pagos</h2>
+      <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:1.5rem">
+        Marca a los participantes que aportaron dinero a la bolsa de premios ($500 pesos).
+        Los participantes marcados tendrán un signo de <strong>$ dorado</strong> en la clasificación general.
+      </p>
+
+      <div class="admin-users-list">
+        <?php foreach ($users as $u): ?>
+          <div class="admin-user-item">
+            <div class="admin-user-info">
+              <span class="admin-user-name"><?= htmlspecialchars($u['username']) ?></span>
+              <span class="admin-user-pts"><?= $u['points'] ?> pts</span>
+            </div>
+            <div class="admin-user-actions">
+              <label class="switch-container">
+                <input type="checkbox" class="toggle-paid-checkbox" data-user-id="<?= $u['id'] ?>" <?= $u['hasPaid'] ? 'checked' : '' ?> />
+                <span class="switch-slider"></span>
+              </label>
+              <span class="paid-status-label" id="status-label-<?= $u['id'] ?>" style="color: <?= $u['hasPaid'] ? 'var(--accent-color)' : 'var(--text-secondary)' ?>; font-size: 0.8rem; font-weight: 700; margin-left: 0.5rem; width: 65px; display: inline-block;">
+                <?= $u['hasPaid'] ? 'Pagado' : 'Sin Pago' ?>
+              </span>
+            </div>
+          </div>
+        <?php endforeach; ?>
+        <?php if (empty($users)): ?>
+          <p style="color:var(--text-secondary); text-align:center">No hay participantes registrados.</p>
+        <?php endif; ?>
+      </div>
+    </div>
 
     <!-- API Sync Panel -->
     <div class="glass-panel" style="margin-top:2rem">
@@ -270,6 +303,53 @@ $matches = $db->query("SELECT * FROM `Match` ORDER BY date ASC")->fetchAll();
         }
       });
     }
+
+    // Toggle user payment status
+    document.querySelectorAll('.toggle-paid-checkbox').forEach(chk => {
+      chk.addEventListener('change', async () => {
+        const userId = chk.dataset.userId;
+        const hasPaid = chk.checked ? 1 : 0;
+        const statusLabel = document.getElementById(`status-label-${userId}`);
+        
+        chk.disabled = true;
+        if (statusLabel) {
+          statusLabel.textContent = 'Guardando...';
+          statusLabel.style.color = 'var(--text-secondary)';
+        }
+
+        try {
+          const res = await fetch('api/toggle_paid.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: parseInt(userId), hasPaid: hasPaid })
+          });
+          const data = await res.json();
+
+          if (data.success) {
+            if (statusLabel) {
+              statusLabel.textContent = hasPaid ? 'Pagado' : 'Sin Pago';
+              statusLabel.style.color = hasPaid ? 'var(--accent-color)' : 'var(--text-secondary)';
+            }
+          } else {
+            alert('Error: ' + (data.error || 'No se pudo actualizar'));
+            chk.checked = !chk.checked; // Revertir
+            if (statusLabel) {
+              statusLabel.textContent = !hasPaid ? 'Pagado' : 'Sin Pago';
+              statusLabel.style.color = !hasPaid ? 'var(--accent-color)' : 'var(--text-secondary)';
+            }
+          }
+        } catch (e) {
+          alert('Error de conexión');
+          chk.checked = !chk.checked; // Revertir
+          if (statusLabel) {
+            statusLabel.textContent = !hasPaid ? 'Pagado' : 'Sin Pago';
+            statusLabel.style.color = !hasPaid ? 'var(--accent-color)' : 'var(--text-secondary)';
+          }
+        } finally {
+          chk.disabled = false;
+        }
+      });
+    });
   </script>
 </body>
 </html>

@@ -17,7 +17,7 @@ foreach ($predictions as $p) {
 }
 
 // Clasificación con puntos proyectados
-$allUsers = $db->query("SELECT id, username, points FROM `User` WHERE role != 'ADMIN' ORDER BY points DESC, username ASC")->fetchAll();
+$allUsers = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role != 'ADMIN' ORDER BY points DESC, username ASC")->fetchAll();
 
 // Calcular puntos proyectados en vivo
 $allPreds = $db->query("
@@ -144,6 +144,19 @@ foreach ($matches as $match) {
                 <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
                   <span style="font-size: 1.1rem; line-height: 1;">🏆</span>
                   <div><strong>Ganador de la Quiniela:</strong> La quiniela abarca todo el certamen (un total de 104 partidos), por lo que el ganador definitivo se determinará al concluir la Gran Final del Mundial.</div>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 style="color: white; margin-bottom: 0.5rem; font-weight: 700;">💰 Bolsa de Premios</h4>
+              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
+                <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                  <span style="font-size: 1.1rem; line-height: 1;">💵</span>
+                  <div><strong>Competición por la Bolsa:</strong> Solo los participantes que aportaron la cuota de entrada ($500 pesos) compiten por la bolsa acumulada. Están marcados con un signo de <strong>$ dorado</strong>.</div>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                  <span style="font-size: 1.1rem; line-height: 1;">🏆</span>
+                  <div><strong>Ganador de la Bolsa:</strong> Se la llevará el participante mejor posicionado que tenga la marca dorada ($), incluso si el ganador absoluto del torneo (1º lugar) no aportó.</div>
                 </li>
               </ul>
             </div>
@@ -643,6 +656,9 @@ foreach ($matches as $match) {
             <div class="lb-rank"><?= $medals[$i] ?? ($i + 1) ?></div>
             <div class="lb-name">
               <?= htmlspecialchars($u['username']) ?>
+              <?php if (!empty($u['hasPaid'])): ?>
+                <span class="paid-indicator" title="Participa por la bolsa de premios">$</span>
+              <?php endif; ?>
               <?php if ((int)$u['id'] === (int)$user['id']): ?>
                 <span style="font-size:0.7rem; color:var(--accent-color)"> (tú)</span>
               <?php endif; ?>
