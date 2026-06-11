@@ -82,7 +82,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=2.7" />
+  <link rel="stylesheet" href="css/style.css?v=2.8" />
 </head>
 <body class="fade-in">
 
@@ -209,7 +209,7 @@ $totalPrizePool = $paidCount * 500;
                   if ($pred && ($isLive || $isFinished) && $match['scoreA'] !== null) {
                       $projPts = calculatePoints((int)$pred['scoreA'], (int)$pred['scoreB'], (int)$match['scoreA'], (int)$match['scoreB']);
                   }
-                  $hasStarted = ($isLive || $isFinished || $status === 'HALFTIME' || $match['scoreA'] !== null);
+                  $hasStarted = ($isLive || $isFinished || $status === 'HALFTIME');
                 ?>
                 <div class="match-card <?= $isLive ? 'match-card--live' : '' ?> <?= $hasStarted ? 'match-card--clickable' : '' ?>" 
                      data-match-id="<?= $match['id'] ?>"
@@ -843,6 +843,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=2.7"></script>
+  <script src="js/app.js?v=2.8"></script>
 </body>
 </html>
