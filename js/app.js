@@ -201,6 +201,19 @@ function updateLeaderboard(leaderboard) {
   const container = document.getElementById('leaderboard');
   if (!container || !leaderboard.length) return;
 
+  // Recalcular bolsa acumulada en vivo
+  const paidCount = leaderboard.filter(u => u.hasPaid).length;
+  const totalPrize = paidCount * 500;
+  
+  const amountEl = document.getElementById('prize-pool-amount');
+  const participantsEl = document.getElementById('prize-pool-participants');
+  if (amountEl) {
+    amountEl.textContent = `$${totalPrize.toLocaleString()} MXN`;
+  }
+  if (participantsEl) {
+    participantsEl.textContent = `${paidCount} ${paidCount === 1 ? 'participante' : 'participantes'} de $500 pesos`;
+  }
+
   const medals = ['🥇', '🥈', '🥉'];
 
   container.innerHTML = leaderboard.map((u, i) => {

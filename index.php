@@ -63,6 +63,15 @@ foreach ($matches as $match) {
     $grouped[$dayKey][] = $match;
     if (in_array($match['status'], ['LIVE', 'HALFTIME'])) $hasLive = true;
 }
+
+// Calcular bolsa acumulada
+$paidCount = 0;
+foreach ($leaderboard as $u) {
+    if (!empty($u['hasPaid'])) {
+        $paidCount++;
+    }
+}
+$totalPrizePool = $paidCount * 500;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -73,7 +82,7 @@ foreach ($matches as $match) {
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=2.4" />
+  <link rel="stylesheet" href="css/style.css?v=2.5" />
 </head>
 <body class="fade-in">
 
@@ -649,6 +658,23 @@ foreach ($matches as $match) {
     <!-- Leaderboard -->
     <section>
       <h2 class="section-title">🏆 Clasificación</h2>
+
+      <!-- Card Bolsa Acumulada -->
+      <div class="glass-panel prize-pool-card" style="margin-bottom: 1.5rem; padding: 1.2rem; border-color: rgba(255, 215, 0, 0.25); background: linear-gradient(135deg, rgba(20, 25, 35, 0.95), rgba(255, 215, 0, 0.03));">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div style="font-size: 2.2rem; line-height: 1; filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3));">💰</div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Bolsa Acumulada</div>
+            <div style="font-size: 1.6rem; font-weight: 900; color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.2);" id="prize-pool-amount">
+              $<?= number_format($totalPrizePool) ?> MXN
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-secondary);" id="prize-pool-participants">
+              <?= $paidCount ?> <?= $paidCount === 1 ? 'participante' : 'participantes' ?> de $500 pesos
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="leaderboard" id="leaderboard">
         <?php $medals = ['🥇','🥈','🥉']; ?>
         <?php foreach ($leaderboard as $i => $u): ?>
@@ -813,6 +839,6 @@ foreach ($matches as $match) {
     </div>
   </div>
 
-  <script src="js/app.js?v=2.4"></script>
+  <script src="js/app.js?v=2.5"></script>
 </body>
 </html>
