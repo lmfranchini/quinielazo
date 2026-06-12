@@ -792,22 +792,24 @@ button, input { font-family: inherit; }
 /* ── Team Scorers List ── */
 .team-scorers {
   margin-top: 0.6rem;
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 0.2rem;
   font-size: 0.7rem;
   color: var(--text-secondary);
   opacity: 0.85;
   font-weight: 600;
-  text-align: center;
+  text-align: left;
   line-height: 1.3;
 }
 .scorer-item {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.25rem;
   font-size: 0.68rem;
+  white-space: nowrap;
 }
 
 /* ── Tab Bar and Tabs ── */
@@ -1011,49 +1013,24 @@ button, input { font-family: inherit; }
 /* ── Tarjetas en el partido ── */
 .team-cards {
   margin-top: 0.4rem;
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 0.2rem;
   font-size: 0.65rem;
   color: var(--text-secondary);
   opacity: 0.85;
   font-weight: 600;
-  text-align: center;
+  text-align: left;
   line-height: 1.3;
 }
 .card-item-yellow, .card-item-red {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.2rem;
   font-weight: 600;
-}
-.card-item-yellow {
-  color: #ffe600;
-}
-.card-item-red {
-  color: #ff0055;
-}
-
-/* ── Tarjetas en el partido ── */
-.team-cards {
-  margin-top: 0.4rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.65rem;
-  color: var(--text-secondary);
-  opacity: 0.85;
-  font-weight: 600;
-  text-align: center;
-  line-height: 1.3;
-}
-.card-item-yellow, .card-item-red {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  font-weight: 600;
+  white-space: nowrap;
 }
 .card-item-yellow {
   color: #ffe600;
