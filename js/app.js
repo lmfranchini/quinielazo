@@ -47,6 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Polling de datos en vivo ──
   initLivePolling();
+
+  // Poblar espectáculos estáticos si los hay al cargar la página
+  document.querySelectorAll('.halftime-show').forEach(el => {
+    populateHalftimeShow(el, false);
+  });
 });
 
 // ── Sistema de actualización en vivo ──
@@ -210,16 +215,8 @@ function updateMatches(matches) {
           if (!htShow) {
             htShow = document.createElement('div');
             htShow.className = 'halftime-show';
-            const animals = ['🐱', '🐶', '🐹', '🐮', '🐷', '🐣', '🦆', '🦛', '🐭', '🐼', '🐨', '🐰', '🐻', '🦊', '🦁'];
-            const dances = ['dance-bounce', 'dance-swing', 'dance-wobble', 'dance-jump'];
-            const randAnimal = animals[Math.floor(Math.random() * animals.length)];
-            const randDance = dances[Math.floor(Math.random() * dances.length)];
-            htShow.innerHTML = `
-              <div class="halftime-bubble">Show de medio tiempo</div>
-              <div class="halftime-character ${randDance}">${randAnimal}</div>
-            `;
             card.appendChild(htShow);
-            playHalftimeChime();
+            populateHalftimeShow(htShow);
           }
         } else {
           if (htShow) {
@@ -860,6 +857,232 @@ function isPlayerMatch(rosterName, eventText) {
 
 let sharedAudioCtx = null;
 
+const HALFTIME_ACTS = {
+  daft_punk: {
+    name: 'Daft Punk',
+    emojis: '🤖🤖 🪩 🎧',
+    dialog: 'AROUND THE WORLD! 🤖🎧',
+    dance: 'dance-bounce',
+    spotlights: ['rgba(0, 240, 255, 0.45)', 'rgba(92, 0, 255, 0.45)'],
+    playMusic: (ctx) => {
+      playArpeggio(ctx, [261.63, 329.63, 392.00, 493.88], 'square', 0.08, 0.08);
+    }
+  },
+  queen: {
+    name: 'Queen',
+    emojis: '👑 👨🏻‍🦱 🎤 🎸',
+    dialog: '¡AY-OH! 👑🎤',
+    dance: 'dance-jump',
+    spotlights: ['rgba(255, 215, 0, 0.45)', 'rgba(255, 0, 85, 0.45)'],
+    playMusic: (ctx) => {
+      playPowerChord(ctx, [130.81, 196.00, 261.63], 'sawtooth', 0.5);
+    }
+  },
+  beatles: {
+    name: 'The Beatles',
+    emojis: '🎸 🎸 🎸 🥁',
+    dialog: 'All you need is love! 💛',
+    dance: 'dance-swing',
+    spotlights: ['rgba(0, 255, 136, 0.35)', 'rgba(255, 170, 0, 0.35)'],
+    playMusic: (ctx) => {
+      playMelody(ctx, [261.63, 293.66, 329.63, 392.00], 'triangle', 0.15, 0.15);
+    }
+  },
+  elvis: {
+    name: 'Elvis Presley',
+    emojis: '🕺 🕶️ 🎸 🔥',
+    dialog: '¡Thank you very much! 🕶️',
+    dance: 'dance-wobble',
+    spotlights: ['rgba(255, 0, 85, 0.45)', 'rgba(255, 170, 0, 0.45)'],
+    playMusic: (ctx) => {
+      playMelody(ctx, [130.81, 164.81, 196.00, 220.00], 'sawtooth', 0.12, 0.12);
+    }
+  },
+  taylor: {
+    name: 'Taylor Swift',
+    emojis: '🎤 👱‍♀️ ✨ 🧣',
+    dialog: 'Shake it off! ✨',
+    dance: 'dance-bounce',
+    spotlights: ['rgba(255, 105, 180, 0.45)', 'rgba(255, 255, 255, 0.45)'],
+    playMusic: (ctx) => {
+      playArpeggio(ctx, [523.25, 587.33, 659.25, 783.99], 'sine', 0.1, 0.1, 0.08);
+    }
+  },
+  bob_marley: {
+    name: 'Bob Marley',
+    emojis: '🎤 🦁 🇯🇲',
+    dialog: 'No woman, no cry... 🇯🇲',
+    dance: 'dance-swing',
+    spotlights: ['rgba(0, 255, 136, 0.45)', 'rgba(255, 215, 0, 0.45)', 'rgba(255, 0, 0, 0.45)'],
+    playMusic: (ctx) => {
+      playReggaeChop(ctx, [261.63, 329.63, 392.00], 0.25);
+    }
+  },
+  kiss: {
+    name: 'KISS',
+    emojis: '👨‍🎤 🎸 🥁 🔥',
+    dialog: 'Rock and roll all nite! 🤘',
+    dance: 'dance-jump',
+    spotlights: ['rgba(255, 0, 85, 0.5)', 'rgba(255, 69, 0, 0.5)'],
+    playMusic: (ctx) => {
+      playPowerChord(ctx, [130.81, 196.00, 261.63, 329.63], 'sawtooth', 0.6);
+    }
+  },
+  lady_gaga: {
+    name: 'Lady Gaga',
+    emojis: '🛸 👱‍♀️ 🕶️ 🎤',
+    dialog: 'Bad romance... 🕶️',
+    dance: 'dance-wobble',
+    spotlights: ['rgba(255, 0, 255, 0.45)', 'rgba(57, 255, 20, 0.45)'],
+    playMusic: (ctx) => {
+      playMelody(ctx, [261.63, 311.13, 392.00, 311.13], 'square', 0.14, 0.14);
+    }
+  },
+  dua_lipa: {
+    name: 'Dua Lipa',
+    emojis: '💃 ✨ 🪩 🕺',
+    dialog: 'Levitating! 🪩',
+    dance: 'dance-bounce',
+    spotlights: ['rgba(255, 0, 127, 0.45)', 'rgba(0, 240, 255, 0.45)'],
+    playMusic: (ctx) => {
+      playMelody(ctx, [130.81, 261.63, 196.00, 261.63], 'square', 0.12, 0.12);
+    }
+  },
+  luis_miguel: {
+    name: 'Luis Miguel',
+    emojis: '🤵 🎤 ☀️ 🌊',
+    dialog: '¡Entrégate! ☀️',
+    dance: 'dance-jump',
+    spotlights: ['rgba(255, 215, 0, 0.5)', 'rgba(255, 255, 255, 0.4)'],
+    playMusic: (ctx) => {
+      playMelody(ctx, [392.00, 493.88, 587.33, 783.99], 'triangle', 0.16, 0.16);
+    }
+  },
+  guns_n_roses: {
+    name: 'Guns N Roses',
+    emojis: '🎩 🎸 🌹 🥁',
+    dialog: "Sweet child o' mine... 🌹",
+    dance: 'dance-swing',
+    spotlights: ['rgba(255, 0, 0, 0.45)', 'rgba(20, 20, 20, 0.6)'],
+    playMusic: (ctx) => {
+      playMelody(ctx, [523.25, 261.63, 392.00, 349.23], 'sawtooth', 0.12, 0.12);
+    }
+  },
+  britney: {
+    name: 'Britney Spears',
+    emojis: '👱‍♀️ 🎀 🎤 🔴',
+    dialog: 'Oops!... I did it again 🎀',
+    dance: 'dance-bounce',
+    spotlights: ['rgba(255, 20, 147, 0.45)', 'rgba(255, 0, 0, 0.45)'],
+    playMusic: (ctx) => {
+      playMelody(ctx, [261.63, 311.13, 349.23, 392.00], 'sawtooth', 0.1, 0.1);
+    }
+  }
+};
+
+function playArpeggio(ctx, notes, type, duration, gap, volume = 0.08) {
+  notes.forEach((freq, index) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + index * gap);
+    gain.gain.setValueAtTime(volume, ctx.currentTime + index * gap);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + index * gap + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + index * gap);
+    osc.stop(ctx.currentTime + index * gap + duration);
+  });
+}
+
+function playPowerChord(ctx, notes, type, duration, volume = 0.06) {
+  notes.forEach((freq) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  });
+}
+
+function playMelody(ctx, notes, type, duration, gap, volume = 0.08) {
+  playArpeggio(ctx, notes, type, duration, gap, volume);
+}
+
+function playReggaeChop(ctx, notes, duration, volume = 0.08) {
+  const playChordAt = (timeOffset) => {
+    notes.forEach((freq) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + timeOffset);
+      gain.gain.setValueAtTime(volume, ctx.currentTime + timeOffset);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + timeOffset + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + timeOffset);
+      osc.stop(ctx.currentTime + timeOffset + duration);
+    });
+  };
+  playChordAt(0.1);
+  playChordAt(0.4);
+}
+
+function populateHalftimeShow(el, playAudio = true) {
+  if (el.dataset.populated === 'true') return;
+  el.dataset.populated = 'true';
+
+  const keys = Object.keys(HALFTIME_ACTS);
+  const randKey = keys[Math.floor(Math.random() * keys.length)];
+  el.dataset.actKey = randKey;
+  const act = HALFTIME_ACTS[randKey];
+
+  const lightColor1 = act.spotlights[0];
+  const lightColor2 = act.spotlights[1] || act.spotlights[0];
+
+  el.innerHTML = `
+    <div class="ht-stage-bg">
+      <div class="ht-spotlight ht-spotlight-1" style="background: linear-gradient(to top, ${lightColor1}, transparent 85%);"></div>
+      <div class="ht-spotlight ht-spotlight-2" style="background: linear-gradient(to top, ${lightColor2}, transparent 85%);"></div>
+      <span class="ht-particle" style="left:15%; animation-delay: 0s; --p-dx: 15px;">🎵</span>
+      <span class="ht-particle" style="left:38%; animation-delay: 1.2s; --p-dx: -25px;">🎶</span>
+      <span class="ht-particle" style="left:60%; animation-delay: 0.6s; --p-dx: 20px;">✨</span>
+      <span class="ht-particle" style="left:82%; animation-delay: 1.8s; --p-dx: -15px;">🎸</span>
+      <div class="ht-crowd">🙌🙌🙌🙌</div>
+    </div>
+    <div class="halftime-bubble" style="z-index: 5;">Show de medio tiempo</div>
+    <div class="halftime-character-wrap" style="z-index: 5; text-align: center;">
+      <div class="halftime-bubble-dialog">${escapeHtml(act.dialog)}</div>
+      <br/>
+      <div class="halftime-character ${act.dance}" style="font-size: 2.5rem;">${escapeHtml(act.emojis)}</div>
+    </div>
+  `;
+
+  if (playAudio) {
+    try {
+      if (!sharedAudioCtx) {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtxClass) {
+          sharedAudioCtx = new AudioCtxClass();
+        }
+      }
+      if (sharedAudioCtx) {
+        if (sharedAudioCtx.state === 'suspended') {
+          sharedAudioCtx.resume();
+        }
+        act.playMusic(sharedAudioCtx);
+      }
+    } catch (e) {
+      console.error('Error playing act music:', e);
+    }
+  }
+}
+
 function initAudioOnFirstClick() {
   const unlock = () => {
     try {
@@ -870,10 +1093,13 @@ function initAudioOnFirstClick() {
           sharedAudioCtx.resume();
         }
         
-        // Si hay algún show de medio tiempo visible al momento del clic de desbloqueo, haz sonar el chime
-        if (document.querySelector('.halftime-show')) {
-          playHalftimeChime();
-        }
+        // Si hay algún show de medio tiempo visible al momento del clic de desbloqueo, haz sonar su música
+        document.querySelectorAll('.halftime-show').forEach(htShow => {
+          const actKey = htShow.dataset.actKey;
+          if (actKey && HALFTIME_ACTS[actKey]) {
+            HALFTIME_ACTS[actKey].playMusic(sharedAudioCtx);
+          }
+        });
       }
     } catch (e) {
       // ignore
@@ -887,43 +1113,3 @@ function initAudioOnFirstClick() {
 
 // Inicializar el escuchador de desbloqueo
 initAudioOnFirstClick();
-
-function playHalftimeChime() {
-  try {
-    if (!sharedAudioCtx) {
-      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtxClass) {
-        sharedAudioCtx = new AudioCtxClass();
-      }
-    }
-    if (!sharedAudioCtx) return;
-    
-    if (sharedAudioCtx.state === 'suspended') {
-      sharedAudioCtx.resume();
-    }
-    
-    // Melodía tierna ascendente: C5, E5, G5, C6 (Do, Mi, Sol, Do)
-    const notes = [523.25, 659.25, 783.99, 1046.50];
-    const duration = 0.15; // Duración de cada nota en segundos
-    const gap = 0.12;      // Retraso entre cada nota
-    
-    notes.forEach((freq, index) => {
-      const osc = sharedAudioCtx.createOscillator();
-      const gain = sharedAudioCtx.createGain();
-      
-      osc.type = 'sine'; // Onda senoidal para un tono suave y tierno
-      osc.frequency.setValueAtTime(freq, sharedAudioCtx.currentTime + index * gap);
-      
-      gain.gain.setValueAtTime(0.12, sharedAudioCtx.currentTime + index * gap); // Volumen controlado (12%)
-      gain.gain.exponentialRampToValueAtTime(0.001, sharedAudioCtx.currentTime + index * gap + duration);
-      
-      osc.connect(gain);
-      gain.connect(sharedAudioCtx.destination);
-      
-      osc.start(sharedAudioCtx.currentTime + index * gap);
-      osc.stop(sharedAudioCtx.currentTime + index * gap + duration);
-    });
-  } catch (e) {
-    // Silenciar si el navegador bloquea la reproducción por políticas de interacción del usuario (autoplay)
-  }
-}

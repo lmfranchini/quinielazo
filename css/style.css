@@ -1637,3 +1637,112 @@ input:disabled + .switch-slider {
   from { transform: translateY(0); }
   to { transform: translateY(-5px); }
 }
+
+/* ── Halftime Stage and Lights ── */
+.ht-stage-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at bottom, rgba(15, 20, 35, 0.96), rgba(8, 12, 22, 0.98));
+  overflow: hidden;
+  z-index: 1;
+}
+
+.ht-spotlight {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  width: 140px;
+  height: 280px;
+  clip-path: polygon(46% 0%, 54% 0%, 100% 100%, 0% 100%);
+  transform-origin: bottom center;
+  opacity: 0.15;
+  z-index: 2;
+  pointer-events: none;
+  filter: blur(1px);
+}
+
+.ht-spotlight-1 {
+  animation: htSpotlightLeft 5s ease-in-out infinite alternate;
+}
+
+.ht-spotlight-2 {
+  animation: htSpotlightRight 5s ease-in-out infinite alternate;
+}
+
+@keyframes htSpotlightLeft {
+  0% { transform: translateX(-50%) rotate(-35deg); }
+  100% { transform: translateX(-50%) rotate(8deg); }
+}
+
+@keyframes htSpotlightRight {
+  0% { transform: translateX(-50%) rotate(-8deg); }
+  100% { transform: translateX(-50%) rotate(35deg); }
+}
+
+/* Floating particles */
+.ht-particle {
+  position: absolute;
+  bottom: 15px;
+  font-size: 0.85rem;
+  opacity: 0;
+  z-index: 3;
+  pointer-events: none;
+  animation: htFloatParticle 2.5s linear infinite;
+  filter: drop-shadow(0 0 4px rgba(255,255,255,0.4));
+}
+
+@keyframes htFloatParticle {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  15% { opacity: 0.8; }
+  80% { opacity: 0.8; }
+  100% { transform: translateY(-130px) translateX(var(--p-dx, 20px)) scale(1.1); opacity: 0; }
+}
+
+/* Crowd container */
+.ht-crowd {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  opacity: 0.22;
+  z-index: 4;
+  user-select: none;
+  pointer-events: none;
+  animation: htCrowdJump 0.35s ease-in-out infinite alternate;
+}
+
+@keyframes htCrowdJump {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3px); }
+}
+
+/* Dialogue Bubble above the Artist */
+.halftime-bubble-dialog {
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 0.25rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  margin-bottom: 0.45rem;
+  display: inline-block;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  animation: htFloatBubble 1.6s ease-in-out infinite alternate;
+}
+
+.halftime-bubble-dialog::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px 4px 0;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.75) transparent;
+  display: block;
+  width: 0;
+}
