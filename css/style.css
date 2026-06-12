@@ -241,10 +241,16 @@ button, input { font-family: inherit; }
   text-transform: uppercase;
   letter-spacing: 0.5px;
   line-height: 1.2;
-  height: 2.4em;
+  min-height: 2.4em;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+@media (max-width: 380px) {
+  .team-name {
+    font-size: 0.8rem;
+  }
 }
 .vs {
   font-weight: 900;
