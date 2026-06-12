@@ -272,9 +272,9 @@ function updateMatches(matches) {
           probContainer.style.display = 'block';
           probContainer.innerHTML = `
             <div class="prob-labels">
-              <span class="prob-label-val prob-val-home">${m.probHome}%</span>
-              <span class="prob-label-val prob-val-draw">${m.probDraw}% (empate)</span>
-              <span class="prob-label-val prob-val-away">${m.probAway}%</span>
+              <span class="prob-label-val prob-val-home">L: ${m.probHome}%</span>
+              <span class="prob-label-val prob-val-draw">E: ${m.probDraw}%</span>
+              <span class="prob-label-val prob-val-away">V: ${m.probAway}%</span>
             </div>
             <div class="prob-bar-track">
               <div class="prob-bar-fill-home" style="width: ${m.probHome}%"></div>

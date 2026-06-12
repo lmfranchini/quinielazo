@@ -338,9 +338,9 @@ $totalPrizePool = $paidCount * 500;
                   <?php if (is_numeric($match['probHome']) && is_numeric($match['probDraw']) && is_numeric($match['probAway'])): ?>
                     <div class="match-probabilities" id="prob-container-<?= $match['id'] ?>">
                       <div class="prob-labels">
-                        <span class="prob-label-val prob-val-home"><?= floatval($match['probHome']) ?>%</span>
-                        <span class="prob-label-val prob-val-draw"><?= floatval($match['probDraw']) ?>% (empate)</span>
-                        <span class="prob-label-val prob-val-away"><?= floatval($match['probAway']) ?>%</span>
+                        <span class="prob-label-val prob-val-home">L: <?= floatval($match['probHome']) ?>%</span>
+                        <span class="prob-label-val prob-val-draw">E: <?= floatval($match['probDraw']) ?>%</span>
+                        <span class="prob-label-val prob-val-away">V: <?= floatval($match['probAway']) ?>%</span>
                       </div>
                       <div class="prob-bar-track">
                         <div class="prob-bar-fill-home" style="width: <?= $match['probHome'] ?>%"></div>

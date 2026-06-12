@@ -1787,14 +1787,17 @@ input:disabled + .switch-slider {
   height: 100%;
   background: linear-gradient(90deg, var(--fifa-purple), var(--fifa-magenta));
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
 }
 .prob-bar-fill-draw {
   height: 100%;
   background: rgba(255, 255, 255, 0.18);
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
 }
 .prob-bar-fill-away {
   height: 100%;
   background: linear-gradient(90deg, var(--fifa-cyan), #00a2ff);
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
 }
