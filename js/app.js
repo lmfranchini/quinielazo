@@ -268,7 +268,7 @@ function updateMatches(matches) {
       // Actualizar probabilidades
       const probContainer = document.getElementById(`prob-container-${m.id}`);
       if (probContainer) {
-        if (m.probHome !== null && m.probDraw !== null && m.probAway !== null) {
+        if (m.status === 'SCHEDULED' && m.probHome !== null && m.probDraw !== null && m.probAway !== null) {
           probContainer.style.display = 'block';
           probContainer.innerHTML = `
             <div class="prob-labels">
