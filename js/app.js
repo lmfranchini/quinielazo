@@ -72,19 +72,48 @@ async function fetchLiveData() {
     const data = await res.json();
     if (data.error) return;
 
-    updateMatches(data.matches);
-    updateLeaderboard(data.leaderboard);
+    try {
+      updateMatches(data.matches);
+    } catch (e) {
+      console.error('Error updating matches:', e);
+    }
+
+    try {
+      updateLeaderboard(data.leaderboard);
+    } catch (e) {
+      console.error('Error updating leaderboard:', e);
+    }
+
     if (data.standings) {
-      updateStandings(data.standings);
+      try {
+        updateStandings(data.standings);
+      } catch (e) {
+        console.error('Error updating standings:', e);
+      }
     }
+
     if (data.topScorers) {
-      updateTopScorers(data.topScorers);
+      try {
+        updateTopScorers(data.topScorers);
+      } catch (e) {
+        console.error('Error updating top scorers:', e);
+      }
     }
+
     if (data.topCards) {
-      updateTopCards(data.topCards);
+      try {
+        updateTopCards(data.topCards);
+      } catch (e) {
+        console.error('Error updating top cards:', e);
+      }
     }
+
     if (data.tStats) {
-      updateTournamentStats(data.tStats);
+      try {
+        updateTournamentStats(data.tStats);
+      } catch (e) {
+        console.error('Error updating tournament stats:', e);
+      }
     }
 
     // Ajustar velocidad de polling
@@ -104,153 +133,154 @@ async function fetchLiveData() {
 
 function updateMatches(matches) {
   matches.forEach(m => {
-    const card = document.querySelector(`.match-card[data-match-id="${m.id}"]`);
-    if (!card) return;
+    try {
+      const card = document.querySelector(`.match-card[data-match-id="${m.id}"]`);
+      if (!card) return;
 
-    // Actualizar marcador en vivo
-    const scoreAEl = document.getElementById(`scoreA-${m.id}`);
-    const scoreBEl = document.getElementById(`scoreB-${m.id}`);
+      // Actualizar marcador en vivo
+      const scoreAEl = document.getElementById(`scoreA-${m.id}`);
+      const scoreBEl = document.getElementById(`scoreB-${m.id}`);
 
-    if (m.status === 'LIVE' || m.status === 'HALFTIME' || m.isFinished) {
-      if (scoreAEl && scoreBEl) {
-        const oldA = parseInt(scoreAEl.textContent);
-        const oldB = parseInt(scoreBEl.textContent);
-        const newA = m.scoreA ?? 0;
-        const newB = m.scoreB ?? 0;
+      if (m.status === 'LIVE' || m.status === 'HALFTIME' || m.isFinished) {
+        if (scoreAEl && scoreBEl) {
+          const oldA = parseInt(scoreAEl.textContent);
+          const oldB = parseInt(scoreBEl.textContent);
+          const newA = m.scoreA ?? 0;
+          const newB = m.scoreB ?? 0;
 
-        if (oldA !== newA) {
-          scoreAEl.textContent = newA;
-          scoreAEl.classList.add('score-changed');
-          setTimeout(() => scoreAEl.classList.remove('score-changed'), 2000);
+          if (oldA !== newA) {
+            scoreAEl.textContent = newA;
+            scoreAEl.classList.add('score-changed');
+            setTimeout(() => scoreAEl.classList.remove('score-changed'), 2000);
+          }
+          if (oldB !== newB) {
+            scoreBEl.textContent = newB;
+            scoreBEl.classList.add('score-changed');
+            setTimeout(() => scoreBEl.classList.remove('score-changed'), 2000);
+          }
         }
-        if (oldB !== newB) {
-          scoreBEl.textContent = newB;
-          scoreBEl.classList.add('score-changed');
-          setTimeout(() => scoreBEl.classList.remove('score-changed'), 2000);
-        }
-      }
 
-      // Actualizar minuto, estado y badges de en vivo
-      let liveInd = card.querySelector('.live-indicator');
-      if (m.status === 'LIVE') {
-        if (!liveInd) {
-          liveInd = document.createElement('div');
-          liveInd.className = 'live-indicator';
-          card.insertBefore(liveInd, card.querySelector('.match-header'));
-        } else {
-          liveInd.className = 'live-indicator';
-        }
-        liveInd.innerHTML = `<span class="live-dot"></span><span>EN VIVO ${m.minute ? "· " + m.minute + "'" : ''}</span>`;
-      } else if (m.status === 'HALFTIME') {
-        if (!liveInd) {
-          liveInd = document.createElement('div');
-          liveInd.className = 'live-indicator live-indicator--ht';
-          card.insertBefore(liveInd, card.querySelector('.match-header'));
-        } else {
-          liveInd.className = 'live-indicator live-indicator--ht';
-        }
-        liveInd.innerHTML = '<span>MEDIO TIEMPO</span>';
-      } else {
-        if (liveInd) {
-          liveInd.remove();
-        }
-      }
-
-      // Actualizar la parte central de estado (Minuto / VS / FINAL)
-      const centerStatus = card.querySelector('.match-center-status');
-      if (centerStatus) {
+        // Actualizar minuto, estado y badges de en vivo
+        let liveInd = card.querySelector('.live-indicator');
         if (m.status === 'LIVE') {
-          const minText = m.minute ? `Min ${m.minute}'` : 'EN VIVO';
-          centerStatus.innerHTML = `
-            <div class="live-dot" style="margin-bottom:0.2rem"></div>
-            <div class="match-time-live" id="minute-${m.id}">${minText}</div>
-          `;
+          if (!liveInd) {
+            liveInd = document.createElement('div');
+            liveInd.className = 'live-indicator';
+            card.insertBefore(liveInd, card.querySelector('.match-header'));
+          } else {
+            liveInd.className = 'live-indicator';
+          }
+          liveInd.innerHTML = `<span class="live-dot"></span><span>EN VIVO ${m.minute ? "· " + m.minute + "'" : ''}</span>`;
         } else if (m.status === 'HALFTIME') {
-          centerStatus.innerHTML = `<div class="match-time-ht">MEDIO TIEMPO</div>`;
-        } else if (m.isFinished || m.status === 'FINISHED') {
-          centerStatus.innerHTML = `<div class="match-time-final">FINAL</div>`;
+          if (!liveInd) {
+            liveInd = document.createElement('div');
+            liveInd.className = 'live-indicator live-indicator--ht';
+            card.insertBefore(liveInd, card.querySelector('.match-header'));
+          } else {
+            liveInd.className = 'live-indicator live-indicator--ht';
+          }
+          liveInd.innerHTML = '<span>MEDIO TIEMPO</span>';
         } else {
-          centerStatus.innerHTML = `<div class="vs">VS</div>`;
+          if (liveInd) {
+            liveInd.remove();
+          }
         }
-      }
 
-      // Show de medio tiempo dinámico
-      let htShow = card.querySelector('.halftime-show');
-      if (m.status === 'HALFTIME') {
-        if (!htShow) {
-          htShow = document.createElement('div');
-          htShow.className = 'halftime-show';
-          const animals = ['🐱', '🐶', '🐹', '🐮', '🐷', '🐣', '🦆', '🦛', '🐭', '🐼', '🐨', '🐰', '🐻', '🦊', '🦁'];
-          const dances = ['dance-bounce', 'dance-swing', 'dance-wobble', 'dance-jump'];
-          const randAnimal = animals[Math.floor(Math.random() * animals.length)];
-          const randDance = dances[Math.floor(Math.random() * dances.length)];
-          htShow.innerHTML = `
-            <div class="halftime-bubble">Show de medio tiempo</div>
-            <div class="halftime-character ${randDance}">${randAnimal}</div>
-          `;
-          card.appendChild(htShow);
-          playHalftimeChime();
+        // Actualizar la parte central de estado (Minuto / VS / FINAL)
+        const centerStatus = card.querySelector('.match-center-status');
+        if (centerStatus) {
+          if (m.status === 'LIVE') {
+            const minText = m.minute ? `Min ${m.minute}'` : 'EN VIVO';
+            centerStatus.innerHTML = `
+              <div class="live-dot" style="margin-bottom:0.2rem"></div>
+              <div class="match-time-live" id="minute-${m.id}">${minText}</div>
+            `;
+          } else if (m.status === 'HALFTIME') {
+            centerStatus.innerHTML = `<div class="match-time-ht">MEDIO TIEMPO</div>`;
+          } else if (m.isFinished || m.status === 'FINISHED') {
+            centerStatus.innerHTML = `<div class="match-time-final">FINAL</div>`;
+          } else {
+            centerStatus.innerHTML = `<div class="vs">VS</div>`;
+          }
         }
-      } else {
-        if (htShow) {
-          htShow.remove();
-        }
-      }
 
-      // Actualizar goleadores en tiempo real
-      const teams = card.querySelectorAll('.team');
-      const scorersAEl = teams[0] ? teams[0].querySelector('.team-scorers') : null;
-      const scorersBEl = teams[1] ? teams[1].querySelector('.team-scorers') : null;
-      if (scorersAEl && scorersBEl) {
-        if (m.scorers) {
-          scorersAEl.innerHTML = (m.scorers.teamA || []).map(sc => `<div class="scorer-item"><span class="event-icon">⚽</span>${escapeHtml(sc)}</div>`).join('');
-          scorersBEl.innerHTML = (m.scorers.teamB || []).map(sc => `<div class="scorer-item"><span class="event-icon">⚽</span>${escapeHtml(sc)}</div>`).join('');
+        // Show de medio tiempo dinámico
+        let htShow = card.querySelector('.halftime-show');
+        if (m.status === 'HALFTIME') {
+          if (!htShow) {
+            htShow = document.createElement('div');
+            htShow.className = 'halftime-show';
+            const animals = ['🐱', '🐶', '🐹', '🐮', '🐷', '🐣', '🦆', '🦛', '🐭', '🐼', '🐨', '🐰', '🐻', '🦊', '🦁'];
+            const dances = ['dance-bounce', 'dance-swing', 'dance-wobble', 'dance-jump'];
+            const randAnimal = animals[Math.floor(Math.random() * animals.length)];
+            const randDance = dances[Math.floor(Math.random() * dances.length)];
+            htShow.innerHTML = `
+              <div class="halftime-bubble">Show de medio tiempo</div>
+              <div class="halftime-character ${randDance}">${randAnimal}</div>
+            `;
+            card.appendChild(htShow);
+            playHalftimeChime();
+          }
         } else {
-          scorersAEl.innerHTML = '';
-          scorersBEl.innerHTML = '';
+          if (htShow) {
+            htShow.remove();
+          }
         }
-      }
 
-      // Actualizar tarjetas en tiempo real
-      const cardsAEl = document.getElementById(`cardsA-${m.id}`);
-      const cardsBEl = document.getElementById(`cardsB-${m.id}`);
-      if (cardsAEl && cardsBEl) {
-        if (m.cards) {
+        // Actualizar goleadores en tiempo real (seguro contra campos vacíos/indefinidos)
+        const teams = card.querySelectorAll('.team');
+        const scorersAEl = teams[0] ? teams[0].querySelector('.team-scorers') : null;
+        const scorersBEl = teams[1] ? teams[1].querySelector('.team-scorers') : null;
+        if (scorersAEl && scorersBEl) {
+          const scorersA = (m.scorers && m.scorers.teamA) || [];
+          const scorersB = (m.scorers && m.scorers.teamB) || [];
+          scorersAEl.innerHTML = scorersA.map(sc => `<div class="scorer-item"><span class="event-icon">⚽</span>${escapeHtml(sc)}</div>`).join('');
+          scorersBEl.innerHTML = scorersB.map(sc => `<div class="scorer-item"><span class="event-icon">⚽</span>${escapeHtml(sc)}</div>`).join('');
+        }
+
+        // Actualizar tarjetas en tiempo real (seguro contra campos vacíos/indefinidos/Arrays vacíos)
+        const cardsAEl = document.getElementById(`cardsA-${m.id}`);
+        const cardsBEl = document.getElementById(`cardsB-${m.id}`);
+        if (cardsAEl && cardsBEl) {
+          const yellowsA = (m.cards && m.cards.teamA && m.cards.teamA.yellow) || [];
+          const redsA = (m.cards && m.cards.teamA && m.cards.teamA.red) || [];
+          const yellowsB = (m.cards && m.cards.teamB && m.cards.teamB.yellow) || [];
+          const redsB = (m.cards && m.cards.teamB && m.cards.teamB.red) || [];
+
           let htmlA = '';
-          (m.cards.teamA.yellow || []).forEach(y => htmlA += `<div class="card-item-yellow"><span class="event-icon">🟨</span>${escapeHtml(y)}</div>`);
-          (m.cards.teamA.red || []).forEach(r => htmlA += `<div class="card-item-red"><span class="event-icon">🟥</span>${escapeHtml(r)}</div>`);
+          yellowsA.forEach(y => htmlA += `<div class="card-item-yellow"><span class="event-icon">🟨</span>${escapeHtml(y)}</div>`);
+          redsA.forEach(r => htmlA += `<div class="card-item-red"><span class="event-icon">🟥</span>${escapeHtml(r)}</div>`);
           cardsAEl.innerHTML = htmlA;
 
           let htmlB = '';
-          (m.cards.teamB.yellow || []).forEach(y => htmlB += `<div class="card-item-yellow"><span class="event-icon">🟨</span>${escapeHtml(y)}</div>`);
-          (m.cards.teamB.red || []).forEach(r => htmlB += `<div class="card-item-red"><span class="event-icon">🟥</span>${escapeHtml(r)}</div>`);
+          yellowsB.forEach(y => htmlB += `<div class="card-item-yellow"><span class="event-icon">🟨</span>${escapeHtml(y)}</div>`);
+          redsB.forEach(r => htmlB += `<div class="card-item-red"><span class="event-icon">🟥</span>${escapeHtml(r)}</div>`);
           cardsBEl.innerHTML = htmlB;
-        } else {
-          cardsAEl.innerHTML = '';
-          cardsBEl.innerHTML = '';
+        }
+
+        // Actualizar puntos proyectados
+        const projEl = document.getElementById(`projPts-${m.id}`);
+        if (projEl) {
+          const cls = m.projectedPts === 6 ? 'pts-exact' : (m.projectedPts === 3 ? 'pts-result' : 'pts-miss');
+          projEl.className = `pred-points-live ${cls}`;
+          const text = m.projectedPts === 6 ? '🎯 +6 pts' : (m.projectedPts === 3 ? '✓ +3 pts' : '✗ 0 pts');
+          projEl.innerHTML = `${text} <span class="pts-live-tag">en vivo</span>`;
         }
       }
 
-      // Actualizar puntos proyectados
-      const projEl = document.getElementById(`projPts-${m.id}`);
-      if (projEl) {
-        const cls = m.projectedPts === 6 ? 'pts-exact' : (m.projectedPts === 3 ? 'pts-result' : 'pts-miss');
-        projEl.className = `pred-points-live ${cls}`;
-        const text = m.projectedPts === 6 ? '🎯 +6 pts' : (m.projectedPts === 3 ? '✓ +3 pts' : '✗ 0 pts');
-        projEl.innerHTML = `${text} <span class="pts-live-tag">en vivo</span>`;
+      // Si un partido cambió de estado (ej. pasó a LIVE), recargar la página
+      const wasLive = card.classList.contains('match-card--live');
+      const isNowLive = (m.status === 'LIVE' || m.status === 'HALFTIME');
+      if (!wasLive && isNowLive) {
+        // Un partido acaba de empezar – recargar para actualizar la UI completa
+        location.reload();
       }
-    }
-
-    // Si un partido cambió de estado (ej. pasó a LIVE), recargar la página
-    const wasLive = card.classList.contains('match-card--live');
-    const isNowLive = (m.status === 'LIVE' || m.status === 'HALFTIME');
-    if (!wasLive && isNowLive) {
-      // Un partido acaba de empezar – recargar para actualizar la UI completa
-      location.reload();
-    }
-    if (m.isFinished && card.querySelector('.score-inputs')) {
-      // Un partido acaba de terminar y todavía mostramos inputs – recargar
-      location.reload();
+      if (m.isFinished && card.querySelector('.score-inputs')) {
+        // Un partido acaba de terminar y todavía mostramos inputs – recargar
+        location.reload();
+      }
+    } catch (err) {
+      console.error(`Error updating match ${m.id}:`, err);
     }
   });
 }
