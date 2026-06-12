@@ -332,12 +332,19 @@ function updateTopScorers(topScorers) {
 
   let html = '';
   let pos = 1;
-  entries.forEach(([player, goals]) => {
+  entries.forEach(([player, info]) => {
+    const flagHtml = info.flag ? `<img src="${info.flag}" alt="${escapeHtml(info.team)}" style="width: 16px; height: auto; border-radius: 2px;" />` : '';
     html += `
       <tr>
         <td class="num pos">${pos++}</td>
-        <td style="font-weight: 700">${escapeHtml(player)}</td>
-        <td class="num" style="font-weight: 800; color: var(--accent-color); font-size: 1.1rem">${goals}</td>
+        <td>
+          <div style="font-weight: 700">${escapeHtml(player)}</div>
+          <div style="font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; margin-top: 0.2rem;">
+            ${flagHtml}
+            <span>${escapeHtml(info.team)}</span>
+          </div>
+        </td>
+        <td class="num" style="font-weight: 800; color: var(--accent-color); font-size: 1.1rem">${info.goals}</td>
       </tr>
     `;
   });
@@ -392,12 +399,21 @@ function updateTopCards(topCards) {
     if (yellows.length === 0) {
       tbodyYellow.innerHTML = '<tr><td style="color:var(--text-secondary); text-align:center; padding:1rem;">Ninguna</td></tr>';
     } else {
-      tbodyYellow.innerHTML = yellows.map(([player, count]) => `
-        <tr>
-          <td style="font-weight:700">${escapeHtml(player)}</td>
-          <td class="num" style="font-weight:800; color:#ffaa00">${count}</td>
-        </tr>
-      `).join('');
+      tbodyYellow.innerHTML = yellows.map(([player, info]) => {
+        const flagHtml = info.flag ? `<img src="${info.flag}" alt="${escapeHtml(info.team)}" style="width: 14px; height: auto; border-radius: 1px;" />` : '';
+        return `
+          <tr>
+            <td>
+              <div style="font-weight:700">${escapeHtml(player)}</div>
+              <div style="font-size: 0.7rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; margin-top: 0.1rem;">
+                ${flagHtml}
+                <span>${escapeHtml(info.team)}</span>
+              </div>
+            </td>
+            <td class="num" style="font-weight:800; color:#ffaa00">${info.count}</td>
+          </tr>
+        `;
+      }).join('');
     }
   }
 
@@ -406,12 +422,21 @@ function updateTopCards(topCards) {
     if (reds.length === 0) {
       tbodyRed.innerHTML = '<tr><td style="color:var(--text-secondary); text-align:center; padding:1rem;">Ninguna</td></tr>';
     } else {
-      tbodyRed.innerHTML = reds.map(([player, count]) => `
-        <tr>
-          <td style="font-weight:700">${escapeHtml(player)}</td>
-          <td class="num" style="font-weight:800; color:#ff0055">${count}</td>
-        </tr>
-      `).join('');
+      tbodyRed.innerHTML = reds.map(([player, info]) => {
+        const flagHtml = info.flag ? `<img src="${info.flag}" alt="${escapeHtml(info.team)}" style="width: 14px; height: auto; border-radius: 1px;" />` : '';
+        return `
+          <tr>
+            <td>
+              <div style="font-weight:700">${escapeHtml(player)}</div>
+              <div style="font-size: 0.7rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; margin-top: 0.1rem;">
+                ${flagHtml}
+                <span>${escapeHtml(info.team)}</span>
+              </div>
+            </td>
+            <td class="num" style="font-weight:800; color:#ff0055">${info.count}</td>
+          </tr>
+        `;
+      }).join('');
     }
   }
 }

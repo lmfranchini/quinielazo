@@ -377,22 +377,25 @@ function getGroupStandings($db) {
  * Obtiene los máximos goleadores individuales analizando scorersData.
  */
 function getTopScorers($db) {
-    $matches = $db->query("SELECT scorersData FROM `Match` WHERE scorersData IS NOT NULL")->fetchAll();
+    $matches = $db->query("SELECT teamA, teamB, scorersData FROM `Match` WHERE scorersData IS NOT NULL")->fetchAll();
     $scorers = array();
     
     foreach ($matches as $m) {
         $data = json_decode($m['scorersData'], true);
         if (!$data) continue;
         
-        $allScorers = array_merge(
-            isset($data['teamA']) ? $data['teamA'] : array(),
-            isset($data['teamB']) ? $data['teamB'] : array()
-        );
+        $teamA = $m['teamA'];
+        $teamB = $m['teamB'];
         
-        foreach ($allScorers as $sc) {
-            // No contar autogoles para la tabla de goleo individual
+        $teamAScorers = isset($data['teamA']) ? $data['teamA'] : array();
+        $teamBScorers = isset($data['teamB']) ? $data['teamB'] : array();
+        
+        foreach ($teamAScorers as $sc) {
             if (stripos($sc, '(ag.)') !== false) {
-                continue;
+                // Autogol va para el equipo contrario
+                $teamName = $teamB;
+            } else {
+                $teamName = $teamA;
             }
             
             // Extraer nombre del jugador (ej. Lionel Messi 12' -> Lionel Messi)
@@ -401,14 +404,35 @@ function getTopScorers($db) {
             if (empty($playerName)) continue;
             
             if (!isset($scorers[$playerName])) {
-                $scorers[$playerName] = 0;
+                $scorers[$playerName] = array('goals' => 0, 'team' => $teamName, 'flag' => getFlagUrl($teamName));
             }
-            $scorers[$playerName]++;
+            $scorers[$playerName]['goals']++;
+        }
+        
+        foreach ($teamBScorers as $sc) {
+            if (stripos($sc, '(ag.)') !== false) {
+                // Autogol va para el equipo contrario
+                $teamName = $teamA;
+            } else {
+                $teamName = $teamB;
+            }
+            
+            // Extraer nombre del jugador (ej. Lionel Messi 12' -> Lionel Messi)
+            $playerName = preg_replace('/\s+\d+.*$/', '', $sc);
+            $playerName = trim($playerName);
+            if (empty($playerName)) continue;
+            
+            if (!isset($scorers[$playerName])) {
+                $scorers[$playerName] = array('goals' => 0, 'team' => $teamName, 'flag' => getFlagUrl($teamName));
+            }
+            $scorers[$playerName]['goals']++;
         }
     }
     
     // Ordenar de mayor a menor cantidad de goles
-    arsort($scorers);
+    uasort($scorers, function($a, $b) {
+        return $b['goals'] - $a['goals'];
+    });
     
     // Devolver los 10 primeros
     return array_slice($scorers, 0, 10, true);
@@ -533,7 +557,7 @@ function getTournamentStats($db) {
  * Obtiene los líderes de tarjetas (amarillas y rojas) individuales.
  */
 function getTopCards($db) {
-    $matches = $db->query("SELECT cardsData FROM `Match` WHERE cardsData IS NOT NULL")->fetchAll();
+    $matches = $db->query("SELECT teamA, teamB, cardsData FROM `Match` WHERE cardsData IS NOT NULL")->fetchAll();
     $yellows = array();
     $reds = array();
     
@@ -541,34 +565,65 @@ function getTopCards($db) {
         $cData = json_decode($m['cardsData'], true);
         if (!$cData) continue;
         
-        $allYellows = array_merge(
-            isset($cData['teamA']['yellow']) ? $cData['teamA']['yellow'] : array(),
-            isset($cData['teamB']['yellow']) ? $cData['teamB']['yellow'] : array()
-        );
-        $allReds = array_merge(
-            isset($cData['teamA']['red']) ? $cData['teamA']['red'] : array(),
-            isset($cData['teamB']['red']) ? $cData['teamB']['red'] : array()
-        );
+        $teamA = $m['teamA'];
+        $teamB = $m['teamB'];
         
-        foreach ($allYellows as $cardStr) {
+        $yellowsA = isset($cData['teamA']['yellow']) ? $cData['teamA']['yellow'] : array();
+        $redsA = isset($cData['teamA']['red']) ? $cData['teamA']['red'] : array();
+        $yellowsB = isset($cData['teamB']['yellow']) ? $cData['teamB']['yellow'] : array();
+        $redsB = isset($cData['teamB']['red']) ? $cData['teamB']['red'] : array();
+        
+        foreach ($yellowsA as $cardStr) {
             $pName = preg_replace('/\s+\d+.*$/', '', $cardStr);
             $pName = trim($pName);
             if ($pName) {
-                $yellows[$pName] = ($yellows[$pName] ?? 0) + 1;
+                if (!isset($yellows[$pName])) {
+                    $yellows[$pName] = array('count' => 0, 'team' => $teamA, 'flag' => getFlagUrl($teamA));
+                }
+                $yellows[$pName]['count']++;
             }
         }
         
-        foreach ($allReds as $cardStr) {
+        foreach ($yellowsB as $cardStr) {
             $pName = preg_replace('/\s+\d+.*$/', '', $cardStr);
             $pName = trim($pName);
             if ($pName) {
-                $reds[$pName] = ($reds[$pName] ?? 0) + 1;
+                if (!isset($yellows[$pName])) {
+                    $yellows[$pName] = array('count' => 0, 'team' => $teamB, 'flag' => getFlagUrl($teamB));
+                }
+                $yellows[$pName]['count']++;
+            }
+        }
+        
+        foreach ($redsA as $cardStr) {
+            $pName = preg_replace('/\s+\d+.*$/', '', $cardStr);
+            $pName = trim($pName);
+            if ($pName) {
+                if (!isset($reds[$pName])) {
+                    $reds[$pName] = array('count' => 0, 'team' => $teamA, 'flag' => getFlagUrl($teamA));
+                }
+                $reds[$pName]['count']++;
+            }
+        }
+        
+        foreach ($redsB as $cardStr) {
+            $pName = preg_replace('/\s+\d+.*$/', '', $cardStr);
+            $pName = trim($pName);
+            if ($pName) {
+                if (!isset($reds[$pName])) {
+                    $reds[$pName] = array('count' => 0, 'team' => $teamB, 'flag' => getFlagUrl($teamB));
+                }
+                $reds[$pName]['count']++;
             }
         }
     }
     
-    arsort($yellows);
-    arsort($reds);
+    uasort($yellows, function($a, $b) {
+        return $b['count'] - $a['count'];
+    });
+    uasort($reds, function($a, $b) {
+        return $b['count'] - $a['count'];
+    });
     
     return array(
         'yellow' => array_slice($yellows, 0, 5, true),

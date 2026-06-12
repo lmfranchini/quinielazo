@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.0" />
+  <link rel="stylesheet" href="css/style.css?v=3.1" />
 </head>
 <body class="fade-in">
 
@@ -513,13 +513,21 @@ $totalPrizePool = $paidCount * 500;
                     <?php 
                     else:
                       $pos = 1;
-                      foreach ($topScorers as $player => $goals):
+                      foreach ($topScorers as $player => $info):
                     ?>
                       <tr>
                         <td class="num pos"><?= $pos++ ?></td>
-                        <td style="font-weight: 700"><?= htmlspecialchars($player) ?></td>
+                        <td>
+                          <div style="font-weight: 700"><?= htmlspecialchars($player) ?></div>
+                          <div style="font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; margin-top: 0.2rem;">
+                            <?php if (!empty($info['flag'])): ?>
+                              <img src="<?= $info['flag'] ?>" alt="<?= htmlspecialchars($info['team']) ?>" style="width: 16px; height: auto; border-radius: 2px;" />
+                            <?php endif; ?>
+                            <span><?= htmlspecialchars($info['team']) ?></span>
+                          </div>
+                        </td>
                         <td class="num" style="font-weight: 800; color: var(--accent-color); font-size: 1.1rem">
-                          <?= $goals ?>
+                          <?= $info['goals'] ?>
                         </td>
                       </tr>
                     <?php 
@@ -547,11 +555,19 @@ $totalPrizePool = $paidCount * 500;
                           <tr><td style="color:var(--text-secondary); text-align:center; padding:1rem;">Ninguna</td></tr>
                         <?php 
                         else:
-                          foreach ($yellowLeaders as $player => $count):
+                          foreach ($yellowLeaders as $player => $info):
                         ?>
                           <tr>
-                            <td style="font-weight:700"><?= htmlspecialchars($player) ?></td>
-                            <td class="num" style="font-weight:800; color:#ffaa00"><?= $count ?></td>
+                            <td>
+                              <div style="font-weight:700"><?= htmlspecialchars($player) ?></div>
+                              <div style="font-size: 0.7rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; margin-top: 0.1rem;">
+                                <?php if (!empty($info['flag'])): ?>
+                                  <img src="<?= $info['flag'] ?>" alt="<?= htmlspecialchars($info['team']) ?>" style="width: 14px; height: auto; border-radius: 1px;" />
+                                <?php endif; ?>
+                                <span><?= htmlspecialchars($info['team']) ?></span>
+                              </div>
+                            </td>
+                            <td class="num" style="font-weight:800; color:#ffaa00"><?= $info['count'] ?></td>
                           </tr>
                         <?php 
                           endforeach;
@@ -572,11 +588,19 @@ $totalPrizePool = $paidCount * 500;
                           <tr><td style="color:var(--text-secondary); text-align:center; padding:1rem;">Ninguna</td></tr>
                         <?php 
                         else:
-                          foreach ($redLeaders as $player => $count):
+                          foreach ($redLeaders as $player => $info):
                         ?>
                           <tr>
-                            <td style="font-weight:700"><?= htmlspecialchars($player) ?></td>
-                            <td class="num" style="font-weight:800; color:#ff0055"><?= $count ?></td>
+                            <td>
+                              <div style="font-weight:700"><?= htmlspecialchars($player) ?></div>
+                              <div style="font-size: 0.7rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; margin-top: 0.1rem;">
+                                <?php if (!empty($info['flag'])): ?>
+                                  <img src="<?= $info['flag'] ?>" alt="<?= htmlspecialchars($info['team']) ?>" style="width: 14px; height: auto; border-radius: 1px;" />
+                                <?php endif; ?>
+                                <span><?= htmlspecialchars($info['team']) ?></span>
+                              </div>
+                            </td>
+                            <td class="num" style="font-weight:800; color:#ff0055"><?= $info['count'] ?></td>
                           </tr>
                         <?php 
                           endforeach;
@@ -841,6 +865,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=3.0"></script>
+  <script src="js/app.js?v=3.1"></script>
 </body>
 </html>
