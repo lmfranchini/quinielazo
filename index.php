@@ -142,7 +142,7 @@ $totalPrizePool = $paidCount * 500;
               <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
                 <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
                   <span style="font-size: 1.1rem; line-height: 1;">🔒</span>
-                  <div><strong>Cierre automático:</strong> Los pronósticos se bloquean automáticamente <strong>1 hora antes</strong> del inicio oficial de cada partido.</div>
+                  <div><strong>Cierre automático:</strong> Los pronósticos se bloquean automáticamente <strong>15 minutos antes</strong> del inicio oficial de cada partido.</div>
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
                   <span style="font-size: 1.1rem; line-height: 1;">⚡</span>

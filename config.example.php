@@ -166,7 +166,7 @@ function getTeamNameMap() {
 
 function isLocked($matchDate) {
     $matchTime = strtotime($matchDate);
-    $lockTime = $matchTime - 3600;
+    $lockTime = $matchTime - 900;
     return time() > $lockTime;
 }
 
