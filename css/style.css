@@ -1766,13 +1766,13 @@ input:disabled + .switch-slider {
   display: inline-block;
 }
 .prob-val-home {
-  color: #ff6b9d;
+  color: var(--text-secondary);
 }
 .prob-val-draw {
   color: var(--text-secondary);
 }
 .prob-val-away {
-  color: var(--fifa-cyan);
+  color: var(--text-secondary);
 }
 .prob-bar-track {
   height: 6px;
@@ -1785,19 +1785,19 @@ input:disabled + .switch-slider {
 }
 .prob-bar-fill-home {
   height: 100%;
-  background: linear-gradient(90deg, var(--fifa-purple), var(--fifa-magenta));
+  background-color: var(--fifa-purple);
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 }
 .prob-bar-fill-draw {
   height: 100%;
-  background: rgba(255, 255, 255, 0.18);
+  background-color: rgba(255, 255, 255, 0.18);
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 }
 .prob-bar-fill-away {
   height: 100%;
-  background: linear-gradient(90deg, var(--fifa-cyan), #00a2ff);
+  background-color: var(--fifa-cyan);
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 }

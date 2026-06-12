@@ -277,9 +277,9 @@ function updateMatches(matches) {
               <span class="prob-label-val prob-val-away">V: ${m.probAway}%</span>
             </div>
             <div class="prob-bar-track">
-              <div class="prob-bar-fill-home" style="width: ${m.probHome}%; background: ${getTeamColor(m.teamA)}"></div>
+              <div class="prob-bar-fill-home" style="width: ${m.probHome}%; background-color: ${getTeamColor(m.teamA)}; background-image: none;"></div>
               <div class="prob-bar-fill-draw" style="width: ${m.probDraw}%"></div>
-              <div class="prob-bar-fill-away" style="width: ${m.probAway}%; background: ${getTeamColor(m.teamB)}"></div>
+              <div class="prob-bar-fill-away" style="width: ${m.probAway}%; background-color: ${getTeamColor(m.teamB)}; background-image: none;"></div>
             </div>
           `;
         } else {
