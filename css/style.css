@@ -789,10 +789,22 @@ button, input { font-family: inherit; }
   opacity: 0.6;
 }
 
-/* ── Team Scorers List ── */
-.team-scorers {
-  margin-top: 0.6rem;
+/* ── Team Events Wrapper ── */
+.team-events {
   display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  margin-top: 0.5rem;
+}
+.event-icon {
+  display: inline-block;
+  width: 1.1rem;
+  text-align: center;
+}
+
+.team-scorers {
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.2rem;
@@ -1010,10 +1022,9 @@ button, input { font-family: inherit; }
   color: white;
 }
 
-/* ── Tarjetas en el partido ── */
 .team-cards {
-  margin-top: 0.4rem;
-  display: inline-flex;
+  margin-top: 0.3rem;
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.2rem;

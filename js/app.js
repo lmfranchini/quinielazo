@@ -180,8 +180,8 @@ function updateMatches(matches) {
       const scorersBEl = teams[1] ? teams[1].querySelector('.team-scorers') : null;
       if (scorersAEl && scorersBEl) {
         if (m.scorers) {
-          scorersAEl.innerHTML = (m.scorers.teamA || []).map(sc => `<div class="scorer-item">⚽ ${escapeHtml(sc)}</div>`).join('');
-          scorersBEl.innerHTML = (m.scorers.teamB || []).map(sc => `<div class="scorer-item">⚽ ${escapeHtml(sc)}</div>`).join('');
+          scorersAEl.innerHTML = (m.scorers.teamA || []).map(sc => `<div class="scorer-item"><span class="event-icon">⚽</span>${escapeHtml(sc)}</div>`).join('');
+          scorersBEl.innerHTML = (m.scorers.teamB || []).map(sc => `<div class="scorer-item"><span class="event-icon">⚽</span>${escapeHtml(sc)}</div>`).join('');
         } else {
           scorersAEl.innerHTML = '';
           scorersBEl.innerHTML = '';
@@ -194,13 +194,13 @@ function updateMatches(matches) {
       if (cardsAEl && cardsBEl) {
         if (m.cards) {
           let htmlA = '';
-          (m.cards.teamA.yellow || []).forEach(y => htmlA += `<div class="card-item-yellow">🟨 ${escapeHtml(y)}</div>`);
-          (m.cards.teamA.red || []).forEach(r => htmlA += `<div class="card-item-red">🟥 ${escapeHtml(r)}</div>`);
+          (m.cards.teamA.yellow || []).forEach(y => htmlA += `<div class="card-item-yellow"><span class="event-icon">🟨</span>${escapeHtml(y)}</div>`);
+          (m.cards.teamA.red || []).forEach(r => htmlA += `<div class="card-item-red"><span class="event-icon">🟥</span>${escapeHtml(r)}</div>`);
           cardsAEl.innerHTML = htmlA;
 
           let htmlB = '';
-          (m.cards.teamB.yellow || []).forEach(y => htmlB += `<div class="card-item-yellow">🟨 ${escapeHtml(y)}</div>`);
-          (m.cards.teamB.red || []).forEach(r => htmlB += `<div class="card-item-red">🟥 ${escapeHtml(r)}</div>`);
+          (m.cards.teamB.yellow || []).forEach(y => htmlB += `<div class="card-item-yellow"><span class="event-icon">🟨</span>${escapeHtml(y)}</div>`);
+          (m.cards.teamB.red || []).forEach(r => htmlB += `<div class="card-item-red"><span class="event-icon">🟥</span>${escapeHtml(r)}</div>`);
           cardsBEl.innerHTML = htmlB;
         } else {
           cardsAEl.innerHTML = '';

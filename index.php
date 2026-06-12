@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.2" />
+  <link rel="stylesheet" href="css/style.css?v=3.3" />
 </head>
 <body class="fade-in">
 
@@ -247,30 +247,33 @@ $totalPrizePool = $paidCount * 500;
                         <div class="team-realtime-score team-realtime-score--scheduled">–</div>
                       <?php endif; ?>
                       
-                      <!-- Goleadores Equipo A -->
-                      <div class="team-scorers">
-                        <?php 
-                        $scorers = isset($match['scorersData']) ? json_decode($match['scorersData'], true) : null;
-                        $scorersA = isset($scorers['teamA']) ? $scorers['teamA'] : array();
-                        foreach ($scorersA as $sc):
-                        ?>
-                          <div class="scorer-item">⚽ <?= htmlspecialchars($sc) ?></div>
-                        <?php endforeach; ?>
-                      </div>
+                      <!-- Eventos del Equipo A (Goles y Tarjetas alineados) -->
+                      <div class="team-events">
+                        <!-- Goleadores Equipo A -->
+                        <div class="team-scorers">
+                          <?php 
+                          $scorers = isset($match['scorersData']) ? json_decode($match['scorersData'], true) : null;
+                          $scorersA = isset($scorers['teamA']) ? $scorers['teamA'] : array();
+                          foreach ($scorersA as $sc):
+                          ?>
+                            <div class="scorer-item"><span class="event-icon">⚽</span><?= htmlspecialchars($sc) ?></div>
+                          <?php endforeach; ?>
+                        </div>
 
-                      <!-- Tarjetas Equipo A -->
-                      <div class="team-cards" id="cardsA-<?= $match['id'] ?>">
-                        <?php 
-                        $cards = isset($match['cardsData']) ? json_decode($match['cardsData'], true) : null;
-                        $yellowsA = isset($cards['teamA']['yellow']) ? $cards['teamA']['yellow'] : array();
-                        $redsA = isset($cards['teamA']['red']) ? $cards['teamA']['red'] : array();
-                        foreach ($yellowsA as $cardStr):
-                        ?>
-                          <div class="card-item-yellow">🟨 <?= htmlspecialchars($cardStr) ?></div>
-                        <?php endforeach; ?>
-                        <?php foreach ($redsA as $cardStr): ?>
-                          <div class="card-item-red">🟥 <?= htmlspecialchars($cardStr) ?></div>
-                        <?php endforeach; ?>
+                        <!-- Tarjetas Equipo A -->
+                        <div class="team-cards" id="cardsA-<?= $match['id'] ?>">
+                          <?php 
+                          $cards = isset($match['cardsData']) ? json_decode($match['cardsData'], true) : null;
+                          $yellowsA = isset($cards['teamA']['yellow']) ? $cards['teamA']['yellow'] : array();
+                          $redsA = isset($cards['teamA']['red']) ? $cards['teamA']['red'] : array();
+                          foreach ($yellowsA as $cardStr):
+                          ?>
+                            <div class="card-item-yellow"><span class="event-icon">🟨</span><?= htmlspecialchars($cardStr) ?></div>
+                          <?php endforeach; ?>
+                          <?php foreach ($redsA as $cardStr): ?>
+                            <div class="card-item-red"><span class="event-icon">🟥</span><?= htmlspecialchars($cardStr) ?></div>
+                          <?php endforeach; ?>
+                        </div>
                       </div>
                     </div>
 
@@ -301,30 +304,33 @@ $totalPrizePool = $paidCount * 500;
                         <div class="team-realtime-score team-realtime-score--scheduled">–</div>
                       <?php endif; ?>
                       
-                      <!-- Goleadores Equipo B -->
-                      <div class="team-scorers">
-                        <?php 
-                        $scorers = isset($match['scorersData']) ? json_decode($match['scorersData'], true) : null;
-                        $scorersB = isset($scorers['teamB']) ? $scorers['teamB'] : array();
-                        foreach ($scorersB as $sc):
-                        ?>
-                          <div class="scorer-item">⚽ <?= htmlspecialchars($sc) ?></div>
-                        <?php endforeach; ?>
-                      </div>
+                      <!-- Eventos del Equipo B (Goles y Tarjetas alineados) -->
+                      <div class="team-events">
+                        <!-- Goleadores Equipo B -->
+                        <div class="team-scorers">
+                          <?php 
+                          $scorers = isset($match['scorersData']) ? json_decode($match['scorersData'], true) : null;
+                          $scorersB = isset($scorers['teamB']) ? $scorers['teamB'] : array();
+                          foreach ($scorersB as $sc):
+                          ?>
+                            <div class="scorer-item"><span class="event-icon">⚽</span><?= htmlspecialchars($sc) ?></div>
+                          <?php endforeach; ?>
+                        </div>
 
-                      <!-- Tarjetas Equipo B -->
-                      <div class="team-cards" id="cardsB-<?= $match['id'] ?>">
-                        <?php 
-                        $cards = isset($match['cardsData']) ? json_decode($match['cardsData'], true) : null;
-                        $yellowsB = isset($cards['teamB']['yellow']) ? $cards['teamB']['yellow'] : array();
-                        $redsB = isset($cards['teamB']['red']) ? $cards['teamB']['red'] : array();
-                        foreach ($yellowsB as $cardStr):
-                        ?>
-                          <div class="card-item-yellow">🟨 <?= htmlspecialchars($cardStr) ?></div>
-                        <?php endforeach; ?>
-                        <?php foreach ($redsB as $cardStr): ?>
-                          <div class="card-item-red">🟥 <?= htmlspecialchars($cardStr) ?></div>
-                        <?php endforeach; ?>
+                        <!-- Tarjetas Equipo B -->
+                        <div class="team-cards" id="cardsB-<?= $match['id'] ?>">
+                          <?php 
+                          $cards = isset($match['cardsData']) ? json_decode($match['cardsData'], true) : null;
+                          $yellowsB = isset($cards['teamB']['yellow']) ? $cards['teamB']['yellow'] : array();
+                          $redsB = isset($cards['teamB']['red']) ? $cards['teamB']['red'] : array();
+                          foreach ($yellowsB as $cardStr):
+                          ?>
+                            <div class="card-item-yellow"><span class="event-icon">🟨</span><?= htmlspecialchars($cardStr) ?></div>
+                          <?php endforeach; ?>
+                          <?php foreach ($redsB as $cardStr): ?>
+                            <div class="card-item-red"><span class="event-icon">🟥</span><?= htmlspecialchars($cardStr) ?></div>
+                          <?php endforeach; ?>
+                        </div>
                       </div>
                     </div>
                   </div>
