@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.8" />
+  <link rel="stylesheet" href="css/style.css?v=3.9" />
 </head>
 <body class="fade-in">
 
@@ -343,9 +343,9 @@ $totalPrizePool = $paidCount * 500;
                         <span class="prob-label-val prob-val-away">V: <?= floatval($match['probAway']) ?>%</span>
                       </div>
                       <div class="prob-bar-track">
-                        <div class="prob-bar-fill-home" style="width: <?= $match['probHome'] ?>%"></div>
+                        <div class="prob-bar-fill-home" style="width: <?= $match['probHome'] ?>%; background: <?= getTeamColor($match['teamA']) ?>"></div>
                         <div class="prob-bar-fill-draw" style="width: <?= $match['probDraw'] ?>%"></div>
-                        <div class="prob-bar-fill-away" style="width: <?= $match['probAway'] ?>%"></div>
+                        <div class="prob-bar-fill-away" style="width: <?= $match['probAway'] ?>%; background: <?= getTeamColor($match['teamB']) ?>"></div>
                       </div>
                     </div>
                   <?php else: ?>
@@ -892,6 +892,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=3.8"></script>
+  <script src="js/app.js?v=3.9"></script>
 </body>
 </html>

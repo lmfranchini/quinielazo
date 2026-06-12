@@ -277,9 +277,9 @@ function updateMatches(matches) {
               <span class="prob-label-val prob-val-away">V: ${m.probAway}%</span>
             </div>
             <div class="prob-bar-track">
-              <div class="prob-bar-fill-home" style="width: ${m.probHome}%"></div>
+              <div class="prob-bar-fill-home" style="width: ${m.probHome}%; background: ${getTeamColor(m.teamA)}"></div>
               <div class="prob-bar-fill-draw" style="width: ${m.probDraw}%"></div>
-              <div class="prob-bar-fill-away" style="width: ${m.probAway}%"></div>
+              <div class="prob-bar-fill-away" style="width: ${m.probAway}%; background: ${getTeamColor(m.teamB)}"></div>
             </div>
           `;
         } else {
@@ -1135,3 +1135,57 @@ function initAudioOnFirstClick() {
 
 // Inicializar el escuchador de desbloqueo
 initAudioOnFirstClick();
+
+function getTeamColor(team) {
+  const colors = {
+    'México': '#006847',
+    'Sudáfrica': '#ffb612',
+    'República de Corea': '#c1272d',
+    'República Checa': '#11457e',
+    'Canadá': '#ff0000',
+    'Bosnia y Herzegovina': '#002f6c',
+    'Catar': '#8a1538',
+    'Suiza': '#d52b1e',
+    'Brasil': '#fec915',
+    'Marruecos': '#c1272d',
+    'Haití': '#00209f',
+    'Escocia': '#005eb8',
+    'Estados Unidos': '#002868',
+    'Paraguay': '#d52b1e',
+    'Australia': '#ffcd00',
+    'Turquía': '#e30a17',
+    'Alemania': '#111111',
+    'Curazao': '#002b7f',
+    'Costa de Marfil': '#ff8200',
+    'Ecuador': '#ffdd00',
+    'Países Bajos': '#ff4f00',
+    'Japón': '#004b87',
+    'Suecia': '#febc11',
+    'Túnez': '#e30a17',
+    'Bélgica': '#e30a17',
+    'Egipto': '#c00000',
+    'Irán': '#239e46',
+    'Nueva Zelanda': '#111111',
+    'España': '#c1272d',
+    'Cabo Verde': '#002b7f',
+    'Arabia Saudí': '#006c35',
+    'Uruguay': '#5bc2e7',
+    'Francia': '#002395',
+    'Senegal': '#00853f',
+    'Irak': '#007a3d',
+    'Noruega': '#ef2b2d',
+    'Argentina': '#75aadb',
+    'Argelia': '#006633',
+    'Austria': '#ed2939',
+    'Jordania': '#e30a17',
+    'Portugal': '#c1272d',
+    'RD de Congo': '#007fff',
+    'Uzbekistán': '#0099b5',
+    'Colombia': '#fcd116',
+    'Inglaterra': '#ce1126',
+    'Croacia': '#ff0000',
+    'Ghana': '#fcd116',
+    'Panamá': '#da291c'
+  };
+  return colors[team] || '#5c00ff';
+}

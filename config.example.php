@@ -632,6 +632,63 @@ function getTopCards($db) {
 }
 
 /**
+ * Obtiene el color oficial/representativo de un equipo para la barra de probabilidades
+ */
+function getTeamColor($team) {
+    $colors = array(
+        'México' => '#006847', // Verde bandera
+        'Sudáfrica' => '#ffb612', // Amarillo oro
+        'República de Corea' => '#c1272d', // Rojo
+        'República Checa' => '#11457e', // Azul
+        'Canadá' => '#ff0000', // Rojo
+        'Bosnia y Herzegovina' => '#002f6c', // Azul oscuro
+        'Catar' => '#8a1538', // Vino / Maroon
+        'Suiza' => '#d52b1e', // Rojo
+        'Brasil' => '#fec915', // Amarillo clásico
+        'Marruecos' => '#c1272d', // Rojo
+        'Haití' => '#00209f', // Azul
+        'Escocia' => '#005eb8', // Azul escocés
+        'Estados Unidos' => '#002868', // Azul marino
+        'Paraguay' => '#d52b1e', // Rojo paraguayo
+        'Australia' => '#ffcd00', // Amarillo / Oro
+        'Turquía' => '#e30a17', // Rojo
+        'Alemania' => '#111111', // Negro / Gris muy oscuro
+        'Curazao' => '#002b7f', // Azul
+        'Costa de Marfil' => '#ff8200', // Naranja
+        'Ecuador' => '#ffdd00', // Amarillo
+        'Países Bajos' => '#ff4f00', // Naranja clásico
+        'Japón' => '#004b87', // Azul samurái
+        'Suecia' => '#febc11', // Amarillo sueco
+        'Túnez' => '#e30a17', // Rojo
+        'Bélgica' => '#e30a17', // Rojo belga
+        'Egipto' => '#c00000', // Rojo
+        'Irán' => '#239e46', // Verde
+        'Nueva Zelanda' => '#111111', // Negro
+        'España' => '#c1272d', // Rojo la roja
+        'Cabo Verde' => '#002b7f', // Azul
+        'Arabia Saudí' => '#006c35', // Verde árabe
+        'Uruguay' => '#5bc2e7', // Celeste uruguayo
+        'Francia' => '#002395', // Azul francés
+        'Senegal' => '#00853f', // Verde
+        'Irak' => '#007a3d', // Verde
+        'Noruega' => '#ef2b2d', // Rojo
+        'Argentina' => '#75aadb', // Celeste argentino
+        'Argelia' => '#006633', // Verde
+        'Austria' => '#ed2939', // Rojo
+        'Jordania' => '#e30a17', // Rojo
+        'Portugal' => '#c1272d', // Rojo portugués
+        'RD de Congo' => '#007fff', // Azul claro
+        'Uzbekistán' => '#0099b5', // Turquesa
+        'Colombia' => '#fcd116', // Amarillo colombiano
+        'Inglaterra' => '#ce1126', // Rojo de cruz de San Jorge
+        'Croacia' => '#ff0000', // Rojo croata
+        'Ghana' => '#fcd116', // Amarillo
+        'Panamá' => '#da291c' // Rojo panameño
+    );
+    return isset($colors[$team]) ? $colors[$team] : '#5c00ff';
+}
+
+/**
  * Mapeo de nombres de equipos de español a inglés para N8N/Odds API
  */
 function getTeamEnglishName($team) {
