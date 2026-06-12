@@ -71,7 +71,11 @@ try {
         "externalId" => "ALTER TABLE `Match` ADD COLUMN `externalId` INT DEFAULT NULL",
         "lastApiUpdate" => "ALTER TABLE `Match` ADD COLUMN `lastApiUpdate` DATETIME DEFAULT NULL",
         "scorersData" => "ALTER TABLE `Match` ADD COLUMN `scorersData` TEXT DEFAULT NULL",
-        "cardsData" => "ALTER TABLE `Match` ADD COLUMN `cardsData` TEXT DEFAULT NULL"
+        "cardsData" => "ALTER TABLE `Match` ADD COLUMN `cardsData` TEXT DEFAULT NULL",
+        "probHome" => "ALTER TABLE `Match` ADD COLUMN `probHome` DECIMAL(5,2) DEFAULT NULL",
+        "probDraw" => "ALTER TABLE `Match` ADD COLUMN `probDraw` DECIMAL(5,2) DEFAULT NULL",
+        "probAway" => "ALTER TABLE `Match` ADD COLUMN `probAway` DECIMAL(5,2) DEFAULT NULL",
+        "probLastUpdate" => "ALTER TABLE `Match` ADD COLUMN `probLastUpdate` DATETIME DEFAULT NULL"
     );
     foreach ($liveColumns as $col => $sqlCmd) {
         try {

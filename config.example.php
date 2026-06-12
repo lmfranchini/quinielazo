@@ -630,3 +630,57 @@ function getTopCards($db) {
         'red'    => array_slice($reds, 0, 5, true)
     );
 }
+
+/**
+ * Consulta el webhook de N8N para obtener las probabilidades de triunfo de un partido.
+ */
+function fetchMatchProbabilitiesFromApi($matchId, $homeTeam, $awayTeam, $matchDate) {
+    $url = 'https://n8n.mantisa.com.mx/webhook/quiniela/match-probabilities';
+    
+    // Normalizar la fecha a formato ISO 8601 UTC
+    $matchTime = strtotime($matchDate . ' UTC');
+    $isoDate = gmdate('Y-m-d\TH:i:s\Z', $matchTime);
+    
+    $payload = json_encode(array(
+        'match_id'   => intval($matchId),
+        'home_team'  => $homeTeam,
+        'away_team'  => $awayTeam,
+        'match_date' => $isoDate
+    ));
+    
+    $response = null;
+    if (function_exists('curl_init')) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Content-Type: application/json'
+        ));
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode === 200 && $response) {
+            return json_decode($response, true);
+        }
+    } else {
+        $ctx = stream_context_create(array(
+            'http' => array(
+                'method'  => 'POST',
+                'timeout' => 10,
+                'header'  => "Content-Type: application/json\r\n",
+                'content' => $payload
+            )
+        ));
+        $response = @file_get_contents($url, false, $ctx);
+        if ($response) {
+            return json_decode($response, true);
+        }
+    }
+    return null;
+}
+

@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.7" />
+  <link rel="stylesheet" href="css/style.css?v=3.8" />
 </head>
 <body class="fade-in">
 
@@ -333,7 +333,23 @@ $totalPrizePool = $paidCount * 500;
                         </div>
                       </div>
                     </div>
-                  </div>
+                  <!-- Probabilidades de triunfo (Odds API via N8N) -->
+                  <?php if (is_numeric($match['probHome']) && is_numeric($match['probDraw']) && is_numeric($match['probAway'])): ?>
+                    <div class="match-probabilities" id="prob-container-<?= $match['id'] ?>">
+                      <div class="prob-labels">
+                        <span class="prob-label-val prob-val-home"><?= floatval($match['probHome']) ?>%</span>
+                        <span class="prob-label-val prob-val-draw"><?= floatval($match['probDraw']) ?>% (empate)</span>
+                        <span class="prob-label-val prob-val-away"><?= floatval($match['probAway']) ?>%</span>
+                      </div>
+                      <div class="prob-bar-track">
+                        <div class="prob-bar-fill-home" style="width: <?= $match['probHome'] ?>%"></div>
+                        <div class="prob-bar-fill-draw" style="width: <?= $match['probDraw'] ?>%"></div>
+                        <div class="prob-bar-fill-away" style="width: <?= $match['probAway'] ?>%"></div>
+                      </div>
+                    </div>
+                  <?php else: ?>
+                    <div class="match-probabilities" id="prob-container-<?= $match['id'] ?>" style="display:none"></div>
+                  <?php endif; ?>
 
                   <!-- Área de pronóstico -->
                   <div class="prediction-area">
@@ -875,6 +891,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=3.7"></script>
+  <script src="js/app.js?v=3.8"></script>
 </body>
 </html>

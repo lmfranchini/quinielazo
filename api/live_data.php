@@ -65,6 +65,9 @@ foreach ($matches as $m) {
         'lastUpdate'   => $m['lastApiUpdate'],
         'scorers'      => $m['scorersData'] ? json_decode($m['scorersData'], true) : null,
         'cards'        => $m['cardsData'] ? json_decode($m['cardsData'], true) : null,
+        'probHome'     => is_numeric($m['probHome']) ? (float)$m['probHome'] : null,
+        'probDraw'     => is_numeric($m['probDraw']) ? (float)$m['probDraw'] : null,
+        'probAway'     => is_numeric($m['probAway']) ? (float)$m['probAway'] : null,
     ];
 }
 

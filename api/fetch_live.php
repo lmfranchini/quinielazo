@@ -190,6 +190,58 @@ foreach ($allEvents as $event) {
 
 logMsg("✅ $updated partidos actualizados, $liveCount en vivo.");
 
+// ── 3. Sincronizar Probabilidades (Momios via N8N) ──
+try {
+    logMsg('🔮 Sincronizando probabilidades de N8N...');
+    $stmtProbs = $db->query("
+        SELECT id, teamA, teamB, date 
+        FROM `Match` 
+        WHERE isFinished = 0 
+          AND status = 'SCHEDULED' 
+          AND (
+            probLastUpdate IS NULL 
+            OR (
+              date < DATE_ADD(NOW(), INTERVAL 24 HOUR) 
+              AND probLastUpdate < DATE_SUB(NOW(), INTERVAL 12 HOUR)
+            )
+          )
+        ORDER BY date ASC 
+        LIMIT 3
+    ");
+    $matchesToSync = $stmtProbs->fetchAll();
+    
+    $probsCount = 0;
+    foreach ($matchesToSync as $mSync) {
+        logMsg("🔮 Buscando probabilidades para: {$mSync['teamA']} vs {$mSync['teamB']} (ID: {$mSync['id']})");
+        $probData = fetchMatchProbabilitiesFromApi($mSync['id'], $mSync['teamA'], $mSync['teamB'], $mSync['date']);
+        if ($probData && isset($probData['status']) && $probData['status'] === 'ok' && isset($probData['probabilities'])) {
+            $homeProb = floatval($probData['probabilities']['home']);
+            $drawProb = floatval($probData['probabilities']['draw']);
+            $awayProb = floatval($probData['probabilities']['away']);
+            
+            $updateStmt = $db->prepare("
+                UPDATE `Match` 
+                SET probHome = ?, probDraw = ?, probAway = ?, probLastUpdate = NOW(), updatedAt = NOW() 
+                WHERE id = ?
+            ");
+            $updateStmt->execute([$homeProb, $drawProb, $awayProb, $mSync['id']]);
+            $probsCount++;
+            logMsg("✅ Guardadas probabilidades: L $homeProb% | E $drawProb% | V $awayProb%");
+        } else {
+            $updateStmt = $db->prepare("
+                UPDATE `Match` 
+                SET probLastUpdate = NOW(), updatedAt = NOW() 
+                WHERE id = ?
+            ");
+            $updateStmt->execute([$mSync['id']]);
+            logMsg("⚠️ No disponible o error en N8N.");
+        }
+    }
+    logMsg("🔮 Probabilidades actualizadas para $probsCount partidos.");
+} catch (Exception $eProb) {
+    logMsg("⚠️ Error al sincronizar probabilidades: " . $eProb->getMessage());
+}
+
 } catch (Exception $e) {
     logMsg('❌ Error: ' . $e->getMessage());
 }

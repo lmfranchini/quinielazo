@@ -265,6 +265,28 @@ function updateMatches(matches) {
         }
       }
 
+      // Actualizar probabilidades
+      const probContainer = document.getElementById(`prob-container-${m.id}`);
+      if (probContainer) {
+        if (m.probHome !== null && m.probDraw !== null && m.probAway !== null) {
+          probContainer.style.display = 'block';
+          probContainer.innerHTML = `
+            <div class="prob-labels">
+              <span class="prob-label-val prob-val-home">${m.probHome}%</span>
+              <span class="prob-label-val prob-val-draw">${m.probDraw}% (empate)</span>
+              <span class="prob-label-val prob-val-away">${m.probAway}%</span>
+            </div>
+            <div class="prob-bar-track">
+              <div class="prob-bar-fill-home" style="width: ${m.probHome}%"></div>
+              <div class="prob-bar-fill-draw" style="width: ${m.probDraw}%"></div>
+              <div class="prob-bar-fill-away" style="width: ${m.probAway}%"></div>
+            </div>
+          `;
+        } else {
+          probContainer.style.display = 'none';
+        }
+      }
+
       // Si un partido cambió de estado (ej. pasó a LIVE), recargar la página
       const wasLive = card.classList.contains('match-card--live');
       const isNowLive = (m.status === 'LIVE' || m.status === 'HALFTIME');
