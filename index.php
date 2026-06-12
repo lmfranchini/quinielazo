@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.3" />
+  <link rel="stylesheet" href="css/style.css?v=3.4" />
 </head>
 <body class="fade-in">
 
@@ -419,6 +419,18 @@ $totalPrizePool = $paidCount * 500;
                       <div class="save-status"></div>
                     <?php endif; ?>
                   </div>
+
+                  <?php if ($status === 'HALFTIME'): 
+                      $animals = array('🐱', '🐶', '🐹', '🐮', '🐷', '🐣', '🦆', '🦛', '🐭', '🐼', '🐨', '🐰', '🐻', '🦊', '🦁');
+                      $dances = array('dance-bounce', 'dance-swing', 'dance-wobble', 'dance-jump');
+                      $randAnimal = $animals[array_rand($animals)];
+                      $randDance = $dances[array_rand($dances)];
+                  ?>
+                    <div class="halftime-show">
+                      <div class="halftime-bubble">Show de medio tiempo</div>
+                      <div class="halftime-character <?= $randDance ?>"><?= $randAnimal ?></div>
+                    </div>
+                  <?php endif; ?>
                 </div>
                 <?php endforeach; ?>
               </div>
@@ -871,6 +883,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=3.2"></script>
+  <script src="js/app.js?v=3.3"></script>
 </body>
 </html>

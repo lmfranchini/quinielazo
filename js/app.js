@@ -174,6 +174,28 @@ function updateMatches(matches) {
         }
       }
 
+      // Show de medio tiempo dinámico
+      let htShow = card.querySelector('.halftime-show');
+      if (m.status === 'HALFTIME') {
+        if (!htShow) {
+          htShow = document.createElement('div');
+          htShow.className = 'halftime-show';
+          const animals = ['🐱', '🐶', '🐹', '🐮', '🐷', '🐣', '🦆', '🦛', '🐭', '🐼', '🐨', '🐰', '🐻', '🦊', '🦁'];
+          const dances = ['dance-bounce', 'dance-swing', 'dance-wobble', 'dance-jump'];
+          const randAnimal = animals[Math.floor(Math.random() * animals.length)];
+          const randDance = dances[Math.floor(Math.random() * dances.length)];
+          htShow.innerHTML = `
+            <div class="halftime-bubble">Show de medio tiempo</div>
+            <div class="halftime-character ${randDance}">${randAnimal}</div>
+          `;
+          card.appendChild(htShow);
+        }
+      } else {
+        if (htShow) {
+          htShow.remove();
+        }
+      }
+
       // Actualizar goleadores en tiempo real
       const teams = card.querySelectorAll('.team');
       const scorersAEl = teams[0] ? teams[0].querySelector('.team-scorers') : null;

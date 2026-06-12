@@ -1524,3 +1524,106 @@ input:disabled + .switch-slider {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ── Show de Medio Tiempo (Animación tierno) ── */
+.halftime-show {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 15, 25, 0.82);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none; /* Permite hacer clic a través del overlay (por ejemplo para abrir la modal de estadísticas) */
+  animation: htFadeIn 0.3s ease-out;
+}
+
+.halftime-bubble {
+  background: linear-gradient(135deg, var(--fifa-magenta), #ff007f);
+  color: white;
+  padding: 0.45rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  margin-bottom: 0.6rem;
+  box-shadow: 0 4px 15px rgba(217, 0, 76, 0.4);
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  animation: htFloatBubble 2s ease-in-out infinite alternate;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.halftime-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px 6px 0;
+  border-style: solid;
+  border-color: #ff007f transparent;
+  display: block;
+  width: 0;
+}
+
+.halftime-character {
+  font-size: 3.2rem;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.6));
+  user-select: none;
+  display: inline-block;
+}
+
+/* Animación: Bote (Bounce) */
+@keyframes htDanceBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-18px) scale(1.15, 0.85); }
+}
+.dance-bounce {
+  animation: htDanceBounce 0.55s ease-in-out infinite;
+}
+
+/* Animación: Balanceo (Swing) */
+@keyframes htDanceSwing {
+  0%, 100% { transform: rotate(-18deg) translateY(0); }
+  50% { transform: rotate(18deg) translateY(-5px) scale(1.1); }
+}
+.dance-swing {
+  animation: htDanceSwing 0.5s ease-in-out infinite;
+}
+
+/* Animación: Bamboleo (Wobble) */
+@keyframes htDanceWobble {
+  0%, 100% { transform: translateX(-12px) rotate(-6deg); }
+  50% { transform: translateX(12px) rotate(6deg) scaleY(0.88); }
+}
+.dance-wobble {
+  animation: htDanceWobble 0.65s ease-in-out infinite;
+}
+
+/* Animación: Salto y Giro (Jump & Spin) */
+@keyframes htDanceJump {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  35% { transform: translateY(-25px) rotate(-12deg) scale(1.08); }
+  70% { transform: translateY(-25px) rotate(12deg) scale(1.08); }
+}
+.dance-jump {
+  animation: htDanceJump 0.75s ease-in-out infinite;
+}
+
+@keyframes htFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes htFloatBubble {
+  from { transform: translateY(0); }
+  to { transform: translateY(-5px); }
+}
