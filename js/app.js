@@ -189,6 +189,7 @@ function updateMatches(matches) {
             <div class="halftime-character ${randDance}">${randAnimal}</div>
           `;
           card.appendChild(htShow);
+          playHalftimeChime();
         }
       } else {
         if (htShow) {
@@ -825,4 +826,36 @@ function isPlayerMatch(rosterName, eventText) {
       return rosterWords.includes(ew);
     }
   });
+}
+
+function playHalftimeChime() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    
+    // Melodía tierna ascendente: C5, E5, G5, C6 (Do, Mi, Sol, Do)
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    const duration = 0.15; // Duración de cada nota en segundos
+    const gap = 0.12;      // Retraso entre cada nota
+    
+    notes.forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sine'; // Onda senoidal para un tono suave y tierno
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + index * gap);
+      
+      gain.gain.setValueAtTime(0.12, ctx.currentTime + index * gap); // Volumen controlado (12%)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + index * gap + duration);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start(ctx.currentTime + index * gap);
+      osc.stop(ctx.currentTime + index * gap + duration);
+    });
+  } catch (e) {
+    // Silenciar si el navegador bloquea la reproducción por políticas de interacción del usuario (autoplay)
+  }
 }
