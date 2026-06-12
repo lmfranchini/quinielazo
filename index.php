@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.11" />
+  <link rel="stylesheet" href="css/style.css?v=3.12" />
 </head>
 <body class="fade-in">
 
@@ -337,6 +337,7 @@ $totalPrizePool = $paidCount * 500;
                   <!-- Probabilidades de triunfo (Odds API via N8N) -->
                   <?php if ($match['status'] === 'SCHEDULED' && is_numeric($match['probHome']) && is_numeric($match['probDraw']) && is_numeric($match['probAway'])): ?>
                     <div class="match-probabilities" id="prob-container-<?= $match['id'] ?>">
+                      <div class="prob-header">Probabilidades de triunfo</div>
                       <div class="prob-labels">
                         <span class="prob-label-val prob-val-home">L: <?= floatval($match['probHome']) ?>%</span>
                         <span class="prob-label-val prob-val-draw">E: <?= floatval($match['probDraw']) ?>%</span>
@@ -892,6 +893,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=3.11"></script>
+  <script src="js/app.js?v=3.12"></script>
 </body>
 </html>

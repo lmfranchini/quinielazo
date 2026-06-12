@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <title>Iniciar Sesión – Quiniela Mundial 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.11" />
+  <link rel="stylesheet" href="css/style.css?v=3.12" />
 </head>
 <body>
   <div class="login-page fade-in">

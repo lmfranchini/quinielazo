@@ -271,6 +271,7 @@ function updateMatches(matches) {
         if (m.status === 'SCHEDULED' && m.probHome !== null && m.probDraw !== null && m.probAway !== null) {
           probContainer.style.display = 'block';
           probContainer.innerHTML = `
+            <div class="prob-header">Probabilidades de triunfo</div>
             <div class="prob-labels">
               <span class="prob-label-val prob-val-home">L: ${m.probHome}%</span>
               <span class="prob-label-val prob-val-draw">E: ${m.probDraw}%</span>
