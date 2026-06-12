@@ -632,6 +632,63 @@ function getTopCards($db) {
 }
 
 /**
+ * Mapeo de nombres de equipos de español a inglés para N8N/Odds API
+ */
+function getTeamEnglishName($team) {
+    $map = array(
+        'México' => 'Mexico',
+        'Sudáfrica' => 'South Africa',
+        'República de Corea' => 'South Korea',
+        'República Checa' => 'Czech Republic',
+        'Canadá' => 'Canada',
+        'Bosnia y Herzegovina' => 'Bosnia and Herzegovina',
+        'Catar' => 'Qatar',
+        'Suiza' => 'Switzerland',
+        'Brasil' => 'Brazil',
+        'Marruecos' => 'Morocco',
+        'Haití' => 'Haiti',
+        'Escocia' => 'Scotland',
+        'Estados Unidos' => 'USA',
+        'Paraguay' => 'Paraguay',
+        'Australia' => 'Australia',
+        'Turquía' => 'Turkey',
+        'Alemania' => 'Germany',
+        'Curazao' => 'Curacao',
+        'Costa de Marfil' => 'Ivory Coast',
+        'Ecuador' => 'Ecuador',
+        'Países Bajos' => 'Netherlands',
+        'Japón' => 'Japan',
+        'Suecia' => 'Sweden',
+        'Túnez' => 'Tunisia',
+        'Bélgica' => 'Belgium',
+        'Egipto' => 'Egypt',
+        'Irán' => 'Iran',
+        'Nueva Zelanda' => 'New Zealand',
+        'España' => 'Spain',
+        'Cabo Verde' => 'Cape Verde',
+        'Arabia Saudí' => 'Saudi Arabia',
+        'Uruguay' => 'Uruguay',
+        'Francia' => 'France',
+        'Senegal' => 'Senegal',
+        'Irak' => 'Iraq',
+        'Noruega' => 'Norway',
+        'Argentina' => 'Argentina',
+        'Argelia' => 'Algeria',
+        'Austria' => 'Austria',
+        'Jordania' => 'Jordan',
+        'Portugal' => 'Portugal',
+        'RD de Congo' => 'DR Congo',
+        'Uzbekistán' => 'Uzbekistan',
+        'Colombia' => 'Colombia',
+        'Inglaterra' => 'England',
+        'Croacia' => 'Croatia',
+        'Ghana' => 'Ghana',
+        'Panamá' => 'Panama'
+    );
+    return isset($map[$team]) ? $map[$team] : $team;
+}
+
+/**
  * Consulta el webhook de N8N para obtener las probabilidades de triunfo de un partido.
  */
 function fetchMatchProbabilitiesFromApi($matchId, $homeTeam, $awayTeam, $matchDate) {
@@ -643,8 +700,8 @@ function fetchMatchProbabilitiesFromApi($matchId, $homeTeam, $awayTeam, $matchDa
     
     $payload = json_encode(array(
         'match_id'   => intval($matchId),
-        'home_team'  => $homeTeam,
-        'away_team'  => $awayTeam,
+        'home_team'  => getTeamEnglishName($homeTeam),
+        'away_team'  => getTeamEnglishName($awayTeam),
         'match_date' => $isoDate
     ));
     
