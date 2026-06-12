@@ -333,6 +333,7 @@ $totalPrizePool = $paidCount * 500;
                         </div>
                       </div>
                     </div>
+                  </div>
                   <!-- Probabilidades de triunfo (Odds API via N8N) -->
                   <?php if (is_numeric($match['probHome']) && is_numeric($match['probDraw']) && is_numeric($match['probAway'])): ?>
                     <div class="match-probabilities" id="prob-container-<?= $match['id'] ?>">
