@@ -658,15 +658,12 @@ function renderModalRoster(rosters, scorers, cards) {
       }
       
       // Buscar si el jugador anotó gol o tiene tarjeta en nuestros datos locales
-      const cleanPlayerName = p.name.toLowerCase();
-      
       const card = document.querySelector(`.match-card[data-match-id="${activeModalMatchId}"]`);
       if (card) {
         const teamIndex = teamKey === 'teamA' ? 0 : 1;
         const scorersInCard = card.querySelectorAll(`.team:nth-child(${teamIndex === 0 ? 1 : 3}) .team-scorers .scorer-item`);
         scorersInCard.forEach(sc => {
-          const text = sc.textContent.toLowerCase();
-          if (text.includes(cleanPlayerName) || cleanPlayerName.split(' ').some(part => part.length > 3 && text.includes(part))) {
+          if (isPlayerMatch(p.name, sc.textContent)) {
             const goalSpan = document.createElement('span');
             goalSpan.textContent = '⚽';
             goalSpan.title = sc.textContent;
@@ -676,8 +673,7 @@ function renderModalRoster(rosters, scorers, cards) {
         
         const cardsInCard = card.querySelectorAll(`#cards${teamKey === 'teamA' ? 'A' : 'B'}-${activeModalMatchId} div`);
         cardsInCard.forEach(c => {
-          const text = c.textContent.toLowerCase();
-          if (text.includes(cleanPlayerName) || cleanPlayerName.split(' ').some(part => part.length > 3 && text.includes(part))) {
+          if (isPlayerMatch(p.name, c.textContent)) {
             const cardSpan = document.createElement('span');
             cardSpan.textContent = c.textContent.includes('🟨') ? '🟨' : '🟥';
             cardSpan.title = c.textContent;
@@ -753,4 +749,58 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function getCleanEventPlayerName(text) {
+  // Remove emojis
+  let name = text.replace(/[⚽🟨🟥]/g, '');
+  // Remove minute (e.g. " 45'", " 90+2'")
+  name = name.replace(/\s+\d+(?:\+\d+)?'/, '');
+  // Remove suffixes like (p.) or (ag.)
+  name = name.replace(/\s*\(p\.\)/gi, '');
+  name = name.replace(/\s*\(ag\.\)/gi, '');
+  return name.trim().toLowerCase();
+}
+
+function isPlayerMatch(rosterName, eventText) {
+  const cleanRoster = rosterName.toLowerCase().trim();
+  const cleanEvent = getCleanEventPlayerName(eventText).replace(/\./g, '').trim(); // Remove dots from abbreviations
+  
+  if (cleanRoster === cleanEvent) return true;
+  
+  const rosterWords = cleanRoster.split(/\s+/);
+  const eventWords = cleanEvent.split(/\s+/);
+  
+  if (eventWords.length === 0) return false;
+  
+  // If event name has only 1 word, it must be present in rosterWords
+  if (eventWords.length === 1) {
+    const singleWord = eventWords[0];
+    if (rosterWords.includes(singleWord)) {
+      // Prevent false positives on common first names if it is the first word and the roster has a last name
+      const commonFirstNames = new Set([
+        "raúl", "raul", "josé", "jose", "juan", "luis", "carlos", "diego", "david", 
+        "javier", "alejandro", "roberto", "fernando", "daniel", "mateo", "santiago", 
+        "sebastian", "gabriel", "lucas", "nicolás", "nicolas", "pedro", "jorge", 
+        "miguel", "ángel", "angel", "antonio", "manuel", "francisco", "césar", "cesar",
+        "hugo", "arturo", "sergio", "rodrigo", "marcos", "christian", "cristian"
+      ]);
+      if (rosterWords.indexOf(singleWord) === 0 && rosterWords.length > 1 && commonFirstNames.has(singleWord)) {
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+  
+  // For multi-word event names (e.g. "r jimenez" or "raul jimenez"), all words must match
+  return eventWords.every(ew => {
+    if (ew.length === 1) {
+      // Abbreviation: must match starting letter of at least one roster word
+      return rosterWords.some(rw => rw.startsWith(ew));
+    } else {
+      // Full word: must exist in rosterWords
+      return rosterWords.includes(ew);
+    }
+  });
 }

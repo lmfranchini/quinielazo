@@ -871,6 +871,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=3.1"></script>
+  <script src="js/app.js?v=3.2"></script>
 </body>
 </html>
