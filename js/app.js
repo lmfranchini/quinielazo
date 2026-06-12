@@ -828,11 +828,49 @@ function isPlayerMatch(rosterName, eventText) {
   });
 }
 
+let sharedAudioCtx = null;
+
+function initAudioOnFirstClick() {
+  const unlock = () => {
+    try {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) {
+        sharedAudioCtx = new AudioCtxClass();
+        if (sharedAudioCtx.state === 'suspended') {
+          sharedAudioCtx.resume();
+        }
+        
+        // Si hay algún show de medio tiempo visible al momento del clic de desbloqueo, haz sonar el chime
+        if (document.querySelector('.halftime-show')) {
+          playHalftimeChime();
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    document.removeEventListener('click', unlock);
+    document.removeEventListener('touchstart', unlock);
+  };
+  document.addEventListener('click', unlock);
+  document.addEventListener('touchstart', unlock);
+}
+
+// Inicializar el escuchador de desbloqueo
+initAudioOnFirstClick();
+
 function playHalftimeChime() {
   try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
+    if (!sharedAudioCtx) {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) {
+        sharedAudioCtx = new AudioCtxClass();
+      }
+    }
+    if (!sharedAudioCtx) return;
+    
+    if (sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume();
+    }
     
     // Melodía tierna ascendente: C5, E5, G5, C6 (Do, Mi, Sol, Do)
     const notes = [523.25, 659.25, 783.99, 1046.50];
@@ -840,20 +878,20 @@ function playHalftimeChime() {
     const gap = 0.12;      // Retraso entre cada nota
     
     notes.forEach((freq, index) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const osc = sharedAudioCtx.createOscillator();
+      const gain = sharedAudioCtx.createGain();
       
       osc.type = 'sine'; // Onda senoidal para un tono suave y tierno
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + index * gap);
+      osc.frequency.setValueAtTime(freq, sharedAudioCtx.currentTime + index * gap);
       
-      gain.gain.setValueAtTime(0.12, ctx.currentTime + index * gap); // Volumen controlado (12%)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + index * gap + duration);
+      gain.gain.setValueAtTime(0.12, sharedAudioCtx.currentTime + index * gap); // Volumen controlado (12%)
+      gain.gain.exponentialRampToValueAtTime(0.001, sharedAudioCtx.currentTime + index * gap + duration);
       
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(sharedAudioCtx.destination);
       
-      osc.start(ctx.currentTime + index * gap);
-      osc.stop(ctx.currentTime + index * gap + duration);
+      osc.start(sharedAudioCtx.currentTime + index * gap);
+      osc.stop(sharedAudioCtx.currentTime + index * gap + duration);
     });
   } catch (e) {
     // Silenciar si el navegador bloquea la reproducción por políticas de interacción del usuario (autoplay)
