@@ -327,10 +327,16 @@ function fetchEspnDetails($eventId, $homeTeamId, $awayTeamId) {
     
     if (isset($data['keyEvents'])) {
         foreach ($data['keyEvents'] as $event) {
-            $typeText = isset($event['type']['text']) ? $event['type']['text'] : '';
-            $typeType = isset($event['type']['type']) ? $event['type']['type'] : '';
-            $teamId = isset($event['team']['id']) ? $event['team']['id'] : '';
-            $minute = isset($event['clock']['displayValue']) ? $event['clock']['displayValue'] : '';
+             $typeText = isset($event['type']['text']) ? $event['type']['text'] : '';
+             $typeType = isset($event['type']['type']) ? $event['type']['type'] : '';
+             
+             // Skip VAR reviews/decisions which are only informational and not actual goal/card events
+             if (stripos($typeText, 'VAR') !== false || stripos($typeType, 'var') !== false) {
+                 continue;
+             }
+             
+             $teamId = isset($event['team']['id']) ? $event['team']['id'] : '';
+             $minute = isset($event['clock']['displayValue']) ? $event['clock']['displayValue'] : '';
             
             $playerName = '';
             if (isset($event['participants'][0]['athlete']['displayName'])) {
