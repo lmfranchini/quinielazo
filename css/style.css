@@ -221,6 +221,7 @@ button, input { font-family: inherit; }
   gap: 0.8rem;
   flex: 1;
   text-align: center;
+  min-width: 0;
 }
 .team img {
   width: 64px;
@@ -806,6 +807,7 @@ button, input { font-family: inherit; }
   align-items: flex-start;
   text-align: left;
   margin-top: 0.5rem;
+  max-width: 100%;
 }
 .event-icon {
   display: inline-block;
@@ -827,11 +829,12 @@ button, input { font-family: inherit; }
 }
 .scorer-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-start;
   gap: 0.25rem;
   font-size: 0.68rem;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 /* ── Tab Bar and Tabs ── */
@@ -1047,11 +1050,12 @@ button, input { font-family: inherit; }
 }
 .card-item-yellow, .card-item-red {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-start;
   gap: 0.2rem;
   font-weight: 600;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 .card-item-yellow {
   color: #ffe600;
@@ -1835,9 +1839,6 @@ input:disabled + .switch-slider {
   .teams {
     gap: 0.15rem;
   }
-  .team {
-    min-width: 0;
-  }
   .team img {
     width: 48px; /* Shrink flag image from 64px to 48px on mobile */
   }
@@ -1858,11 +1859,6 @@ input:disabled + .switch-slider {
     flex: 0 0 auto;
     min-width: 45px;
     margin-top: 2.2rem; /* Align vertically with smaller flag size */
-  }
-  .scorer-item, .card-item-yellow, .card-item-red {
-    white-space: normal;
-    word-break: break-word;
-    align-items: flex-start;
   }
   .event-icon {
     margin-top: 0.1rem; /* Adjust emoji vertical alignment when text wraps */
