@@ -1811,3 +1811,79 @@ input:disabled + .switch-slider {
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 }
+
+/* ── Mobile Layout and Card Adjustments ── */
+@media (max-width: 600px) {
+  .main-container {
+    padding: 1rem 0.5rem;
+  }
+  .glass-panel {
+    padding: 1rem 0.8rem;
+  }
+  .match-grid {
+    gap: 1rem;
+  }
+  .match-card {
+    padding: 1rem 0.6rem;
+  }
+  .prediction-area {
+    padding-top: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .teams {
+    gap: 0.15rem;
+  }
+  .team {
+    min-width: 0;
+  }
+  .team img {
+    width: 48px; /* Shrink flag image from 64px to 48px on mobile */
+  }
+  .team-flag-placeholder {
+    width: 48px;
+    height: 32px;
+  }
+  .team-name {
+    font-size: 0.75rem;
+  }
+  .team-realtime-score {
+    font-size: 1.8rem;
+  }
+  .team-realtime-score--scheduled {
+    font-size: 1.3rem;
+  }
+  .match-center-status {
+    flex: 0 0 auto;
+    min-width: 45px;
+    margin-top: 2.2rem; /* Align vertically with smaller flag size */
+  }
+  .scorer-item, .card-item-yellow, .card-item-red {
+    white-space: normal;
+    word-break: break-word;
+    align-items: flex-start;
+  }
+  .event-icon {
+    margin-top: 0.1rem; /* Adjust emoji vertical alignment when text wraps */
+  }
+  .score-input {
+    width: 50px;
+    height: 50px;
+    font-size: 1.4rem;
+    border-radius: 8px;
+  }
+  .btn-save {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    margin-top: 0.8rem;
+  }
+  .match-badge {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.6rem;
+  }
+  .live-indicator {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
