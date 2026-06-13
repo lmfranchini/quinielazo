@@ -799,15 +799,15 @@ function fetchMatchProbabilitiesFromApi($matchId, $homeTeam, $awayTeam, $matchDa
 }
 
 /**
- * Obtener el historial de posiciones diarias de los usuarios para el gráfico
+ * Obtener el historial de puntos acumulados de los usuarios para el gráfico
  */
-function getRankHistory($db) {
+function getPointsHistory($db) {
     // 1. Obtener todos los partidos finalizados ordenados por fecha
-    $matches = $db->query("SELECT id, date, scoreA, scoreB FROM `Match` WHERE isFinished = 1 ORDER BY date ASC")->fetchAll();
+    $matches = $db->query("SELECT id, teamA, teamB, date FROM `Match` WHERE isFinished = 1 ORDER BY date ASC")->fetchAll();
     
     // Si no hay partidos finalizados, retornamos un historial vacío
     if (empty($matches)) {
-        return array('days' => array(), 'history' => array());
+        return array('labels' => array(), 'matchDetails' => array(), 'history' => array());
     }
     
     // 2. Obtener usuarios (excluyendo administradores)
@@ -820,73 +820,34 @@ function getRankHistory($db) {
     }
     
     // 3. Obtener todas las predicciones de los usuarios
-    $preds = $db->query("SELECT userId, matchId, scoreA, scoreB, points FROM `Prediction`")->fetchAll();
+    $preds = $db->query("SELECT userId, matchId, points FROM `Prediction`")->fetchAll();
     $predMap = array();
     foreach ($preds as $p) {
-        $predMap[(int)$p['userId']][(int)$p['matchId']] = array(
-            'scoreA' => (int)$p['scoreA'],
-            'scoreB' => (int)$p['scoreB'],
-            'points' => (int)$p['points']
-        );
+        $predMap[(int)$p['userId']][(int)$p['matchId']] = (int)$p['points'];
     }
     
-    // 4. Agrupar los partidos finalizados por día (usando formatMatchDay)
-    $days = array();
-    $dayMatches = array();
-    foreach ($matches as $m) {
-        $dayLabel = formatMatchDay($m['date']);
-        if (!in_array($dayLabel, $days)) {
-            $days[] = $dayLabel;
-        }
-        $dayMatches[$dayLabel][] = $m;
-    }
-    
-    // 5. Calcular puntos acumulados día por día
+    // 4. Inicializar puntos acumulados en 0
     $cumulativePoints = array();
+    $history = array(); // [$userId => [0, pts1, pts2...]]
     foreach ($userIds as $uid) {
         $cumulativePoints[$uid] = 0;
+        $history[$uid] = array(0);
     }
     
-    $history = array(); // [$userId => [$dayIndex => $rank]]
-    foreach ($userIds as $uid) {
-        $history[$uid] = array();
-    }
+    $labels = array('Inicio');
+    $matchDetails = array('Inicio del torneo');
     
-    foreach ($days as $dayLabel) {
-        // Sumar los puntos obtenidos en los partidos de este día
-        foreach ($dayMatches[$dayLabel] as $m) {
-            $matchId = (int)$m['id'];
-            foreach ($userIds as $uid) {
-                if (isset($predMap[$uid][$matchId])) {
-                    $cumulativePoints[$uid] += $predMap[$uid][$matchId]['points'];
-                }
-            }
-        }
+    // 5. Calcular puntos acumulados partido por partido
+    foreach ($matches as $idx => $m) {
+        $matchId = (int)$m['id'];
+        $matchNum = $idx + 1;
+        $labels[] = "P" . $matchNum;
+        $matchDetails[] = "Partido " . $matchNum . ": " . $m['teamA'] . " vs " . $m['teamB'];
         
-        // Calcular el rank de cada usuario en este día
-        $scores = array();
         foreach ($userIds as $uid) {
-            $scores[] = array(
-                'userId' => $uid,
-                'points' => $cumulativePoints[$uid],
-                'username' => $userNames[$uid]
-            );
-        }
-        
-        usort($scores, function($a, $b) {
-            if ($b['points'] !== $a['points']) {
-                return $b['points'] - $a['points'];
-            }
-            return strcmp($a['username'], $b['username']);
-        });
-        
-        // Asignar rank (1-indexed)
-        $currentRank = 1;
-        for ($i = 0; $i < count($scores); $i++) {
-            if ($i > 0 && $scores[$i]['points'] < $scores[$i - 1]['points']) {
-                $currentRank = $i + 1;
-            }
-            $history[$scores[$i]['userId']][] = $currentRank;
+            $pointsGained = isset($predMap[$uid][$matchId]) ? $predMap[$uid][$matchId] : 0;
+            $cumulativePoints[$uid] += $pointsGained;
+            $history[$uid][] = $cumulativePoints[$uid];
         }
     }
     
@@ -896,14 +857,16 @@ function getRankHistory($db) {
         $formattedHistory[] = array(
             'userId' => $uid,
             'username' => $userNames[$uid],
-            'ranks' => $history[$uid]
+            'points' => $history[$uid]
         );
     }
     
     return array(
-        'days' => $days,
+        'labels' => $labels,
+        'matchDetails' => $matchDetails,
         'history' => $formattedHistory
     );
 }
+
 
 

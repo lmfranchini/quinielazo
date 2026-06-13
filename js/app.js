@@ -1217,23 +1217,23 @@ function getUsernameColor(username) {
 }
 
 /**
- * Inicializa el gráfico de evolución de posiciones en la pestaña Estadísticas
+ * Inicializa el gráfico de evolución de puntos en la pestaña Estadísticas
  */
-function initRankHistoryChart() {
-  if (!window.rankHistoryData || !window.rankHistoryData.days || window.rankHistoryData.days.length === 0) {
+function initPointsHistoryChart() {
+  if (!window.pointsHistoryData || !window.pointsHistoryData.labels || window.pointsHistoryData.labels.length === 0) {
     return;
   }
   
-  if (window.rankHistoryChartInstance) {
+  if (window.pointsHistoryChartInstance) {
     return; // Ya inicializado
   }
   
-  const canvas = document.getElementById('rankHistoryChart');
+  const canvas = document.getElementById('pointsHistoryChart');
   if (!canvas) {
     return;
   }
   
-  const datasets = window.rankHistoryData.history.map(player => {
+  const datasets = window.pointsHistoryData.history.map(player => {
     const isCurrentUser = (player.username === window.currentUsername);
     let strokeColor;
     let borderWidth;
@@ -1254,23 +1254,23 @@ function initRankHistoryChart() {
     
     return {
       label: player.username,
-      data: player.ranks,
+      data: player.points,
       borderColor: strokeColor,
       backgroundColor: strokeColor,
       borderWidth: borderWidth,
       pointRadius: pointRadius,
       pointHoverRadius: pointHoverRadius,
       fill: false,
-      tension: 0.3,
+      tension: 0.25,
       order: isCurrentUser ? 1 : 10
     };
   });
   
   const ctx = canvas.getContext('2d');
-  window.rankHistoryChartInstance = new Chart(ctx, {
+  window.pointsHistoryChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: window.rankHistoryData.days,
+      labels: window.pointsHistoryData.labels,
       datasets: datasets
     },
     options: {
@@ -1294,8 +1294,15 @@ function initRankHistoryChart() {
           cornerRadius: 8,
           displayColors: true,
           callbacks: {
+            title: function(context) {
+              const idx = context[0].dataIndex;
+              if (window.pointsHistoryData.matchDetails && window.pointsHistoryData.matchDetails[idx]) {
+                return window.pointsHistoryData.matchDetails[idx];
+              }
+              return context[0].label;
+            },
             label: function(context) {
-              return ` ${context.dataset.label}: Posición #${context.raw}`;
+              return ` ${context.dataset.label}: ${context.raw} pts`;
             }
           }
         }
@@ -1315,25 +1322,21 @@ function initRankHistoryChart() {
           }
         },
         y: {
-          reverse: true,
-          min: 1,
+          reverse: false,
+          min: 0,
           grid: {
             color: 'rgba(255, 255, 255, 0.05)',
             drawBorder: false
           },
           ticks: {
             color: 'rgba(255, 255, 255, 0.6)',
-            stepSize: 1,
             precision: 0,
             font: {
               family: "'Inter', sans-serif",
               size: 11
             },
             callback: function(value) {
-              if (value % 1 === 0) {
-                return '#' + value;
-              }
-              return null;
+              return value + ' pts';
             }
           }
         }
@@ -1341,4 +1344,5 @@ function initRankHistoryChart() {
     }
   });
 }
+
 
