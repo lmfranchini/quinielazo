@@ -733,14 +733,27 @@ function renderModalRoster(rosters, scorers, cards) {
       // Buscar si el jugador anotó gol o tiene tarjeta en nuestros datos locales
       const card = document.querySelector(`.match-card[data-match-id="${activeModalMatchId}"]`);
       if (card) {
-        const teamIndex = teamKey === 'teamA' ? 0 : 1;
-        const scorersInCard = card.querySelectorAll(`.team:nth-child(${teamIndex === 0 ? 1 : 3}) .team-scorers .scorer-item`);
-        scorersInCard.forEach(sc => {
-          if (isPlayerMatch(p.name, sc.textContent)) {
+        // 1. Buscar goles normales en su propio equipo (no deben ser autogoles)
+        const ownTeamIndex = teamKey === 'teamA' ? 1 : 3;
+        const ownScorers = card.querySelectorAll(`.team:nth-child(${ownTeamIndex}) .team-scorers .scorer-item`);
+        ownScorers.forEach(sc => {
+          if (isPlayerMatch(p.name, sc.textContent) && !sc.textContent.includes('(ag.')) {
             const goalSpan = document.createElement('span');
             goalSpan.textContent = '⚽';
             goalSpan.title = sc.textContent;
             eventsDiv.appendChild(goalSpan);
+          }
+        });
+        
+        // 2. Buscar autogoles en el equipo contrario (deben contener '(ag.')
+        const opposingTeamIndex = teamKey === 'teamA' ? 3 : 1;
+        const opposingScorers = card.querySelectorAll(`.team:nth-child(${opposingTeamIndex}) .team-scorers .scorer-item`);
+        opposingScorers.forEach(sc => {
+          if (isPlayerMatch(p.name, sc.textContent) && sc.textContent.includes('(ag.')) {
+            const ogSpan = document.createElement('span');
+            ogSpan.innerHTML = '⚽ <span style="color:var(--text-secondary); font-size:0.85em; font-weight:bold;">(ag.)</span>';
+            ogSpan.title = sc.textContent;
+            eventsDiv.appendChild(ogSpan);
           }
         });
         
