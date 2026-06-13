@@ -1296,6 +1296,7 @@ function initPointsHistoryChart() {
             drawBorder: false
           },
           ticks: {
+            autoSkip: false,
             // Destacar al usuario actual en el eje Y en color cyan y negrita
             color: function(context) {
               const label = context.chart.data.labels[context.index];

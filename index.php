@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.20" />
+  <link rel="stylesheet" href="css/style.css?v=3.21" />
   <!-- Chart.js para el gráfico de posiciones -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -722,7 +722,10 @@ $totalPrizePool = $paidCount * 500;
                 El gráfico estará disponible cuando finalice el primer partido del Mundial.
               </div>
             <?php else: ?>
-              <div style="position: relative; height: 320px; width: 100%;">
+              <?php 
+              $chartHeight = max(320, count($pointsHist['players']) * 24); 
+              ?>
+              <div style="position: relative; height: <?= $chartHeight ?>px; width: 100%;">
                 <canvas id="pointsHistoryChart"></canvas>
               </div>
               <script>
@@ -922,6 +925,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=3.20"></script>
+  <script src="js/app.js?v=3.21"></script>
 </body>
 </html>
