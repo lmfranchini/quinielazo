@@ -80,7 +80,9 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.17" />
+  <link rel="stylesheet" href="css/style.css?v=3.18" />
+  <!-- Chart.js para el gráfico de posiciones -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="fade-in">
 
@@ -514,6 +516,30 @@ $totalPrizePool = $paidCount * 500;
       <!-- Tab: Estadísticas -->
       <div id="tab-stats" class="tab-pane">
         <div class="glass-panel" style="padding: 1.5rem;">
+          
+          <!-- Gráfico de Evolución de Posiciones (Full Width) -->
+          <div class="stats-card" style="margin-bottom: 2rem; padding: 1.5rem;">
+            <h4 class="group-title" style="color: var(--fifa-cyan); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.5rem;">
+              📈 Evolución de Posiciones
+            </h4>
+            <?php 
+            $rankHist = getRankHistory($db); 
+            if (empty($rankHist['days'])):
+            ?>
+              <div style="text-align: center; color: var(--text-secondary); padding: 3rem 0; font-size: 0.9rem;">
+                El gráfico estará disponible cuando finalice el primer partido del Mundial.
+              </div>
+            <?php else: ?>
+              <div style="position: relative; height: 320px; width: 100%;">
+                <canvas id="rankHistoryChart"></canvas>
+              </div>
+              <script>
+                window.rankHistoryData = <?= json_encode($rankHist) ?>;
+                window.currentUsername = <?= json_encode($user['username']) ?>;
+              </script>
+            <?php endif; ?>
+          </div>
+
           <div class="stats-tab-grid">
             <!-- Columna Goleadores y Tarjetas -->
             <div style="display: flex; flex-direction: column; gap: 1.5rem;">
@@ -801,6 +827,9 @@ $totalPrizePool = $paidCount * 500;
       } else if (tabId === 'stats') {
         document.getElementById('btn-tab-stats').classList.add('active');
         document.getElementById('tab-stats').classList.add('active');
+        if (typeof initRankHistoryChart === 'function') {
+          initRankHistoryChart();
+        }
       }
     }
   </script>
@@ -893,6 +922,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=3.17"></script>
+  <script src="js/app.js?v=3.18"></script>
 </body>
 </html>

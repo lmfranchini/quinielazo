@@ -1203,3 +1203,142 @@ function getTeamColor(team) {
   };
   return colors[team] || '#5c00ff';
 }
+
+/**
+ * Genera un color determinista basado en el nombre de usuario
+ */
+function getUsernameColor(username) {
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsla(${hue}, 75%, 65%, 0.35)`;
+}
+
+/**
+ * Inicializa el gráfico de evolución de posiciones en la pestaña Estadísticas
+ */
+function initRankHistoryChart() {
+  if (!window.rankHistoryData || !window.rankHistoryData.days || window.rankHistoryData.days.length === 0) {
+    return;
+  }
+  
+  if (window.rankHistoryChartInstance) {
+    return; // Ya inicializado
+  }
+  
+  const canvas = document.getElementById('rankHistoryChart');
+  if (!canvas) {
+    return;
+  }
+  
+  const datasets = window.rankHistoryData.history.map(player => {
+    const isCurrentUser = (player.username === window.currentUsername);
+    let strokeColor;
+    let borderWidth;
+    let pointRadius;
+    let pointHoverRadius;
+    
+    if (isCurrentUser) {
+      strokeColor = '#00f0ff'; // Neon Cyan
+      borderWidth = 4;
+      pointRadius = 4;
+      pointHoverRadius = 6;
+    } else {
+      strokeColor = getUsernameColor(player.username);
+      borderWidth = 2;
+      pointRadius = 1.5;
+      pointHoverRadius = 4;
+    }
+    
+    return {
+      label: player.username,
+      data: player.ranks,
+      borderColor: strokeColor,
+      backgroundColor: strokeColor,
+      borderWidth: borderWidth,
+      pointRadius: pointRadius,
+      pointHoverRadius: pointHoverRadius,
+      fill: false,
+      tension: 0.3,
+      order: isCurrentUser ? 1 : 10
+    };
+  });
+  
+  const ctx = canvas.getContext('2d');
+  window.rankHistoryChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: window.rankHistoryData.days,
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'nearest',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#00f0ff',
+          bodyColor: '#ffffff',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
+          padding: 10,
+          cornerRadius: 8,
+          displayColors: true,
+          callbacks: {
+            label: function(context) {
+              return ` ${context.dataset.label}: Posición #${context.raw}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)',
+            drawBorder: false
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.6)',
+            font: {
+              family: "'Inter', sans-serif",
+              size: 11
+            }
+          }
+        },
+        y: {
+          reverse: true,
+          min: 1,
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)',
+            drawBorder: false
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.6)',
+            stepSize: 1,
+            precision: 0,
+            font: {
+              family: "'Inter', sans-serif",
+              size: 11
+            },
+            callback: function(value) {
+              if (value % 1 === 0) {
+                return '#' + value;
+              }
+              return null;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
