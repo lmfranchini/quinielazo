@@ -225,7 +225,8 @@ button, input { font-family: inherit; }
 }
 .team img {
   width: 64px;
-  height: auto;
+  height: 43px;
+  object-fit: cover;
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   display: block;
@@ -1142,7 +1143,8 @@ button, input { font-family: inherit; }
 }
 .modal-team img {
   width: 70px;
-  height: auto;
+  height: 47px;
+  object-fit: cover;
   border-radius: 6px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.5);
   margin-bottom: 0.6rem;
@@ -1841,6 +1843,7 @@ input:disabled + .switch-slider {
   }
   .team img {
     width: 48px; /* Shrink flag image from 64px to 48px on mobile */
+    height: 32px;
   }
   .team-flag-placeholder {
     width: 48px;

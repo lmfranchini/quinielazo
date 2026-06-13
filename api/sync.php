@@ -350,7 +350,12 @@ function fetchEspnDetails($eventId, $homeTeamId, $awayTeamId) {
             if (empty($playerName)) continue;
             
             // 1. Goles
-            $isGoal = (stripos($typeText, 'Goal') !== false || stripos($typeType, 'goal') !== false);
+            $isGoal = (
+                stripos($typeText, 'Goal') !== false || 
+                stripos($typeType, 'goal') !== false || 
+                stripos($typeText, 'Penalty - Scored') !== false || 
+                (stripos($typeType, 'penalty') !== false && (stripos($typeType, 'scored') !== false || stripos($typeText, 'Scored') !== false))
+            );
             if ($isGoal) {
                 $suffix = '';
                 if (stripos($typeText, 'penalty') !== false) {
