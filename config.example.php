@@ -807,16 +807,16 @@ function getPointsHistory($db) {
     
     // Si no hay partidos finalizados, retornamos un historial vacío
     if (empty($matches)) {
-        return array('labels' => array(), 'matchDetails' => array(), 'history' => array());
+        return array('players' => array(), 'datasets' => array());
     }
     
-    // 2. Obtener usuarios (excluyendo administradores)
-    $users = $db->query("SELECT id, username FROM `User` WHERE role != 'ADMIN'")->fetchAll();
-    $userIds = array();
-    $userNames = array();
+    // 2. Obtener usuarios (excluyendo administradores) ordenados por puntos desc
+    $users = $db->query("SELECT id, username FROM `User` WHERE role != 'ADMIN' ORDER BY points DESC, username ASC")->fetchAll();
+    $playerNames = array();
+    $playerIds = array();
     foreach ($users as $u) {
-        $userIds[] = (int)$u['id'];
-        $userNames[(int)$u['id']] = $u['username'];
+        $playerNames[] = $u['username'];
+        $playerIds[] = (int)$u['id'];
     }
     
     // 3. Obtener todas las predicciones de los usuarios
@@ -826,45 +826,24 @@ function getPointsHistory($db) {
         $predMap[(int)$p['userId']][(int)$p['matchId']] = (int)$p['points'];
     }
     
-    // 4. Inicializar puntos acumulados en 0
-    $cumulativePoints = array();
-    $history = array(); // [$userId => [0, pts1, pts2...]]
-    foreach ($userIds as $uid) {
-        $cumulativePoints[$uid] = 0;
-        $history[$uid] = array(0);
-    }
-    
-    $labels = array('Inicio');
-    $matchDetails = array('Inicio del torneo');
-    
-    // 5. Calcular puntos acumulados partido por partido
+    // 4. Construir datasets por cada partido
+    $datasets = array();
     foreach ($matches as $idx => $m) {
         $matchId = (int)$m['id'];
-        $matchNum = $idx + 1;
-        $labels[] = "P" . $matchNum;
-        $matchDetails[] = "Partido " . $matchNum . ": " . $m['teamA'] . " vs " . $m['teamB'];
-        
-        foreach ($userIds as $uid) {
-            $pointsGained = isset($predMap[$uid][$matchId]) ? $predMap[$uid][$matchId] : 0;
-            $cumulativePoints[$uid] += $pointsGained;
-            $history[$uid][] = $cumulativePoints[$uid];
+        $pointsData = array();
+        foreach ($playerIds as $uid) {
+            $pointsData[] = isset($predMap[$uid][$matchId]) ? $predMap[$uid][$matchId] : 0;
         }
-    }
-    
-    // Estructurar el resultado
-    $formattedHistory = array();
-    foreach ($userIds as $uid) {
-        $formattedHistory[] = array(
-            'userId' => $uid,
-            'username' => $userNames[$uid],
-            'points' => $history[$uid]
+        $datasets[] = array(
+            'label' => "P" . ($idx + 1),
+            'description' => "Partido " . ($idx + 1) . ": " . $m['teamA'] . " vs " . $m['teamB'],
+            'data' => $pointsData
         );
     }
     
     return array(
-        'labels' => $labels,
-        'matchDetails' => $matchDetails,
-        'history' => $formattedHistory
+        'players' => $playerNames,
+        'datasets' => $datasets
     );
 }
 

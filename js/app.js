@@ -1219,8 +1219,11 @@ function getUsernameColor(username) {
 /**
  * Inicializa el gráfico de evolución de puntos en la pestaña Estadísticas
  */
+/**
+ * Inicializa el gráfico de barras horizontales apiladas para la evolución de puntos
+ */
 function initPointsHistoryChart() {
-  if (!window.pointsHistoryData || !window.pointsHistoryData.labels || window.pointsHistoryData.labels.length === 0) {
+  if (!window.pointsHistoryData || !window.pointsHistoryData.players || window.pointsHistoryData.players.length === 0) {
     return;
   }
   
@@ -1233,56 +1236,86 @@ function initPointsHistoryChart() {
     return;
   }
   
-  const datasets = window.pointsHistoryData.history.map(player => {
-    const isCurrentUser = (player.username === window.currentUsername);
-    let strokeColor;
-    let borderWidth;
-    let pointRadius;
-    let pointHoverRadius;
+  // Mapeamos los datasets recibidos del backend. Cada dataset es un partido (P1, P2...)
+  const datasets = window.pointsHistoryData.datasets.map((ds, idx) => {
+    // Generar un color determinista para cada partido usando el ángulo dorado para que sean bien distinguibles
+    const hue = (idx * 137.5) % 360;
+    const baseColor = `hsla(${hue}, 70%, 55%, 0.7)`;
     
-    if (isCurrentUser) {
-      strokeColor = '#00f0ff'; // Neon Cyan
-      borderWidth = 4;
-      pointRadius = 4;
-      pointHoverRadius = 6;
-    } else {
-      strokeColor = getUsernameColor(player.username);
-      borderWidth = 2;
-      pointRadius = 1.5;
-      pointHoverRadius = 4;
-    }
+    // Generar bordes destacados (neon cyan) para la barra del usuario actual en todos sus segmentos
+    const borderColors = window.pointsHistoryData.players.map(player => {
+      return player === window.currentUsername ? '#00f0ff' : 'rgba(20, 25, 35, 0.4)';
+    });
+    const borderWidths = window.pointsHistoryData.players.map(player => {
+      return player === window.currentUsername ? 2 : 1;
+    });
     
     return {
-      label: player.username,
-      data: player.points,
-      borderColor: strokeColor,
-      backgroundColor: strokeColor,
-      borderWidth: borderWidth,
-      pointRadius: pointRadius,
-      pointHoverRadius: pointHoverRadius,
-      fill: false,
-      tension: 0.25,
-      order: isCurrentUser ? 1 : 10
+      label: ds.label,
+      description: ds.description, // Descripción completa del partido (ej. "Partido 1: EEUU vs Paraguay")
+      data: ds.data, // Puntos ganados por cada jugador en este partido (en orden de players)
+      backgroundColor: baseColor,
+      borderColor: borderColors,
+      borderWidth: borderWidths
     };
   });
   
   const ctx = canvas.getContext('2d');
   window.pointsHistoryChartInstance = new Chart(ctx, {
-    type: 'line',
+    type: 'bar',
     data: {
-      labels: window.pointsHistoryData.labels,
+      labels: window.pointsHistoryData.players, // Nombres de participantes en el eje Y
       datasets: datasets
     },
     options: {
+      indexAxis: 'y', // Hace que el gráfico sea de barras horizontales
       responsive: true,
       maintainAspectRatio: false,
-      interaction: {
-        mode: 'nearest',
-        intersect: false
+      scales: {
+        x: {
+          stacked: true, // Apilar barras en el eje X
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)',
+            drawBorder: false
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.6)',
+            font: {
+              family: "'Inter', sans-serif",
+              size: 11
+            },
+            callback: function(value) {
+              return value + ' pts';
+            }
+          }
+        },
+        y: {
+          stacked: true, // Apilar barras en el eje Y
+          grid: {
+            display: false, // Ocultar líneas de cuadrícula verticales del eje Y para limpiar la interfaz
+            drawBorder: false
+          },
+          ticks: {
+            // Destacar al usuario actual en el eje Y en color cyan y negrita
+            color: function(context) {
+              const label = context.chart.data.labels[context.index];
+              return label === window.currentUsername ? '#00f0ff' : 'rgba(255, 255, 255, 0.6)';
+            },
+            font: function(context) {
+              const label = context.chart.data.labels[context.index];
+              const isCurrent = (label === window.currentUsername);
+              return {
+                family: "'Inter', sans-serif",
+                size: isCurrent ? 12 : 11,
+                weight: isCurrent ? 'bold' : 'normal'
+              };
+            }
+          }
+        }
       },
       plugins: {
         legend: {
-          display: false
+          display: false // No mostrar leyenda de partidos (P1, P2...) para no saturar
         },
         tooltip: {
           backgroundColor: 'rgba(15, 23, 42, 0.95)',
@@ -1292,51 +1325,16 @@ function initPointsHistoryChart() {
           borderWidth: 1,
           padding: 10,
           cornerRadius: 8,
-          displayColors: true,
           callbacks: {
             title: function(context) {
-              const idx = context[0].dataIndex;
-              if (window.pointsHistoryData.matchDetails && window.pointsHistoryData.matchDetails[idx]) {
-                return window.pointsHistoryData.matchDetails[idx];
-              }
+              // El título del tooltip muestra el nombre del jugador
               return context[0].label;
             },
             label: function(context) {
-              return ` ${context.dataset.label}: ${context.raw} pts`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: {
-            color: 'rgba(255, 255, 255, 0.05)',
-            drawBorder: false
-          },
-          ticks: {
-            color: 'rgba(255, 255, 255, 0.6)',
-            font: {
-              family: "'Inter', sans-serif",
-              size: 11
-            }
-          }
-        },
-        y: {
-          reverse: false,
-          min: 0,
-          grid: {
-            color: 'rgba(255, 255, 255, 0.05)',
-            drawBorder: false
-          },
-          ticks: {
-            color: 'rgba(255, 255, 255, 0.6)',
-            precision: 0,
-            font: {
-              family: "'Inter', sans-serif",
-              size: 11
-            },
-            callback: function(value) {
-              return value + ' pts';
+              const ds = context.dataset;
+              const pts = context.raw;
+              const desc = ds.description || ds.label;
+              return ` ${desc}: +${pts} pts`;
             }
           }
         }
@@ -1344,5 +1342,6 @@ function initPointsHistoryChart() {
     }
   });
 }
+
 
 
