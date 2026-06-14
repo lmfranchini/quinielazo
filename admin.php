@@ -42,7 +42,7 @@ $users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role
   <title>Admin – Quiniela Mundial 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.25" />
+  <link rel="stylesheet" href="css/style.css?v=3.26" />
 </head>
 <body class="fade-in">
 

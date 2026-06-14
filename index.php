@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.25" />
+  <link rel="stylesheet" href="css/style.css?v=3.26" />
   <!-- Chart.js para el gráfico de posiciones -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -764,7 +764,7 @@ $totalPrizePool = $paidCount * 500;
     </section>
 
     <!-- Leaderboard -->
-    <section>
+    <section id="leaderboard-section">
       <h2 class="section-title">🏆 Clasificación</h2>
 
       <!-- Card Bolsa Acumulada -->
@@ -880,6 +880,33 @@ $totalPrizePool = $paidCount * 500;
         }
       }
     }
+
+    // Lógica del botón flotante para móviles (FAB)
+    function handleFabClick() {
+      const fab = document.getElementById('mobile-fab');
+      if (!fab) return;
+      if (fab.dataset.action === 'top') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        const el = document.getElementById('leaderboard-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    }
+
+    window.addEventListener('scroll', function() {
+      const fab = document.getElementById('mobile-fab');
+      if (!fab) return;
+      // Si el scroll pasa de 500px, cambia de ir a Tabla a ir a Partidos (Arriba)
+      if (window.scrollY > 500) {
+        fab.innerHTML = '⚽ Partidos';
+        fab.dataset.action = 'top';
+      } else {
+        fab.innerHTML = '🏆 Tabla';
+        fab.dataset.action = 'leaderboard';
+      }
+    });
   </script>
   <!-- Modal de Detalles del Partido (Live Stats & Lineups) -->
   <div id="match-details-modal" class="modal">
@@ -970,6 +997,11 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=3.25"></script>
+  <!-- Botón Flotante para Móviles -->
+  <button id="mobile-fab" class="mobile-fab" data-action="leaderboard" onclick="handleFabClick()">
+    🏆 Tabla
+  </button>
+
+  <script src="js/app.js?v=3.26"></script>
 </body>
 </html>
