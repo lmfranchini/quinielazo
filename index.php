@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.26" />
+  <link rel="stylesheet" href="css/style.css?v=3.27" />
   <!-- Chart.js para el gráfico de posiciones -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -849,7 +849,7 @@ $totalPrizePool = $paidCount * 500;
       const isCollapsed = contentEl.style.maxHeight === '0px' || contentEl.style.maxHeight === '';
       
       if (isCollapsed) {
-        contentEl.style.maxHeight = '2500px';
+        contentEl.style.maxHeight = '10000px';
         contentEl.style.opacity = '1';
         iconEl.textContent = 'Ocultar ▲';
         groupEl.classList.remove('day-group--collapsed');
@@ -1002,6 +1002,6 @@ $totalPrizePool = $paidCount * 500;
     🏆 Tabla
   </button>
 
-  <script src="js/app.js?v=3.26"></script>
+  <script src="js/app.js?v=3.27"></script>
 </body>
 </html>
