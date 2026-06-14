@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.21" />
+  <link rel="stylesheet" href="css/style.css?v=3.22" />
   <!-- Chart.js para el gráfico de posiciones -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -242,7 +242,7 @@ $totalPrizePool = $paidCount * 500;
                       <?php if ($flagA): ?>
                         <img src="<?= $flagA ?>" alt="<?= htmlspecialchars($match['teamA']) ?>" />
                       <?php else: ?><div class="team-flag-placeholder"></div><?php endif; ?>
-                      <div class="team-name"><?= htmlspecialchars($match['teamA']) ?></div>
+                      <div class="team-name"><span><?= htmlspecialchars($match['teamA']) ?></span></div>
                       <?php if ($isLive || $isFinished || $status === 'HALFTIME'): ?>
                         <div class="team-realtime-score" id="scoreA-<?= $match['id'] ?>"><?= $match['scoreA'] ?? 0 ?></div>
                       <?php else: ?>
@@ -299,7 +299,7 @@ $totalPrizePool = $paidCount * 500;
                       <?php if ($flagB): ?>
                         <img src="<?= $flagB ?>" alt="<?= htmlspecialchars($match['teamB']) ?>" />
                       <?php else: ?><div class="team-flag-placeholder"></div><?php endif; ?>
-                      <div class="team-name"><?= htmlspecialchars($match['teamB']) ?></div>
+                      <div class="team-name"><span><?= htmlspecialchars($match['teamB']) ?></span></div>
                       <?php if ($isLive || $isFinished || $status === 'HALFTIME'): ?>
                         <div class="team-realtime-score" id="scoreB-<?= $match['id'] ?>"><?= $match['scoreB'] ?? 0 ?></div>
                       <?php else: ?>
