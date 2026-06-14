@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.24" />
+  <link rel="stylesheet" href="css/style.css?v=3.25" />
   <!-- Chart.js para el gráfico de posiciones -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -192,16 +192,28 @@ $totalPrizePool = $paidCount * 500;
           <?php $matchNumber = 1; ?>
           <?php foreach ($grouped as $day => $dayMatches): 
             $allFinished = true;
+            $dayPoints = 0;
             foreach ($dayMatches as $m) {
                 if (!(bool)$m['isFinished']) {
                     $allFinished = false;
-                    break;
+                }
+                // Si el partido está terminado y hay marcador real, sumar puntos obtenidos
+                if ((bool)$m['isFinished'] && is_numeric($m['scoreA'])) {
+                    $pred = $predMap[$m['id']] ?? null;
+                    if ($pred) {
+                        $dayPoints += calculatePoints((int)$pred['scoreA'], (int)$pred['scoreB'], (int)$m['scoreA'], (int)$m['scoreB']);
+                    }
                 }
             }
           ?>
             <div class="day-group <?= $allFinished ? 'day-group--collapsed' : '' ?>">
               <div class="day-header" onclick="toggleDayGroup(this)">
-                <span><?= htmlspecialchars($day) ?></span>
+                <span>
+                  <?= htmlspecialchars($day) ?>
+                  <?php if ($allFinished): ?>
+                    <span class="day-points-badge">+<?= $dayPoints ?> pts</span>
+                  <?php endif; ?>
+                </span>
                 <span class="day-toggle-icon"><?= $allFinished ? 'Mostrar ▼' : 'Ocultar ▲' ?></span>
               </div>
               <div class="day-content" style="<?= $allFinished ? 'max-height: 0px; overflow: hidden; opacity: 0;' : '' ?>">
@@ -958,6 +970,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=3.24"></script>
+  <script src="js/app.js?v=3.25"></script>
 </body>
 </html>

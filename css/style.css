@@ -189,6 +189,20 @@ button, input { font-family: inherit; }
   opacity: 1;
   transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
 }
+.day-points-badge {
+  display: inline-block;
+  background: rgba(0, 255, 136, 0.12);
+  color: var(--accent-color);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  margin-left: 0.75rem;
+  border: 1px solid rgba(0, 255, 136, 0.22);
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 
 /* ── Match Grid ── */
 .match-grid {
