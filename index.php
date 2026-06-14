@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.27" />
+  <link rel="stylesheet" href="css/style.css?v=3.28" />
   <!-- Chart.js para el gráfico de posiciones -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -216,7 +216,7 @@ $totalPrizePool = $paidCount * 500;
                 </span>
                 <span class="day-toggle-icon"><?= $allFinished ? 'Mostrar ▼' : 'Ocultar ▲' ?></span>
               </div>
-              <div class="day-content" style="<?= $allFinished ? 'max-height: 0px; overflow: hidden; opacity: 0;' : '' ?>">
+              <div class="day-content" style="<?= $allFinished ? 'max-height: 0px; overflow: hidden; opacity: 0;' : 'max-height: none;' ?>">
                 <div class="match-grid">
                 <?php foreach ($dayMatches as $match):
                   $pred = $predMap[$match['id']] ?? null;
@@ -849,11 +849,20 @@ $totalPrizePool = $paidCount * 500;
       const isCollapsed = contentEl.style.maxHeight === '0px' || contentEl.style.maxHeight === '';
       
       if (isCollapsed) {
-        contentEl.style.maxHeight = '10000px';
+        contentEl.style.maxHeight = contentEl.scrollHeight + 'px';
         contentEl.style.opacity = '1';
         iconEl.textContent = 'Ocultar ▲';
         groupEl.classList.remove('day-group--collapsed');
+        
+        // Remover el límite de max-height después de terminar la animación
+        setTimeout(() => {
+          if (!groupEl.classList.contains('day-group--collapsed')) {
+            contentEl.style.maxHeight = 'none';
+          }
+        }, 400);
       } else {
+        contentEl.style.maxHeight = contentEl.scrollHeight + 'px';
+        contentEl.offsetHeight; // forzar reflow
         contentEl.style.maxHeight = '0px';
         contentEl.style.opacity = '0';
         iconEl.textContent = 'Mostrar ▼';
@@ -1002,6 +1011,6 @@ $totalPrizePool = $paidCount * 500;
     🏆 Tabla
   </button>
 
-  <script src="js/app.js?v=3.27"></script>
+  <script src="js/app.js?v=3.28"></script>
 </body>
 </html>
