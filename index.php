@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.22" />
+  <link rel="stylesheet" href="css/style.css?v=3.23" />
   <!-- Chart.js para el gráfico de posiciones -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -118,9 +118,9 @@ $totalPrizePool = $paidCount * 500;
           <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--accent-color); display: flex; align-items: center; gap: 0.6rem;">
             📜 Reglas del Juego
           </h3>
-          <span id="rules-toggle-icon" style="font-size: 0.9rem; color: var(--accent-color); transition: all 0.3s ease; background: rgba(0, 255, 136, 0.1); padding: 0.3rem 0.6rem; border-radius: 6px;">Ocultar ▲</span>
+          <span id="rules-toggle-icon" style="font-size: 0.9rem; color: var(--text-secondary); transition: all 0.3s ease; background: rgba(255, 255, 255, 0.05); padding: 0.3rem 0.6rem; border-radius: 6px;">Mostrar ▼</span>
         </div>
-        <div id="rules-content" style="max-height: 1000px; overflow: hidden; transition: max-height 0.4s ease, opacity 0.4s ease, margin-top 0.4s ease; opacity: 1; margin-top: 1rem;">
+        <div id="rules-content" style="max-height: 0px; overflow: hidden; transition: max-height 0.4s ease, opacity 0.4s ease, margin-top 0.4s ease; opacity: 0; margin-top: 0;">
           <div style="padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; font-size: 0.88rem; line-height: 1.5; color: var(--text-secondary);">
             <div>
               <h4 style="color: white; margin-bottom: 0.5rem; font-weight: 700;">📈 Sistema de Puntuación</h4>
@@ -925,6 +925,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=3.21"></script>
+  <script src="js/app.js?v=3.23"></script>
 </body>
 </html>
