@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.23" />
+  <link rel="stylesheet" href="css/style.css?v=3.24" />
   <!-- Chart.js para el gráfico de posiciones -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -190,10 +190,22 @@ $totalPrizePool = $paidCount * 500;
           <p style="text-align:center; color:var(--text-secondary)">No hay partidos programados aún.</p>
         <?php else: ?>
           <?php $matchNumber = 1; ?>
-          <?php foreach ($grouped as $day => $dayMatches): ?>
-            <div class="day-group">
-              <h3 class="day-header"><?= htmlspecialchars($day) ?></h3>
-              <div class="match-grid">
+          <?php foreach ($grouped as $day => $dayMatches): 
+            $allFinished = true;
+            foreach ($dayMatches as $m) {
+                if (!(bool)$m['isFinished']) {
+                    $allFinished = false;
+                    break;
+                }
+            }
+          ?>
+            <div class="day-group <?= $allFinished ? 'day-group--collapsed' : '' ?>">
+              <div class="day-header" onclick="toggleDayGroup(this)">
+                <span><?= htmlspecialchars($day) ?></span>
+                <span class="day-toggle-icon"><?= $allFinished ? 'Mostrar ▼' : 'Ocultar ▲' ?></span>
+              </div>
+              <div class="day-content" style="<?= $allFinished ? 'max-height: 0px; overflow: hidden; opacity: 0;' : '' ?>">
+                <div class="match-grid">
                 <?php foreach ($dayMatches as $match):
                   $pred = $predMap[$match['id']] ?? null;
                   $locked = isLocked($match['date']);
@@ -447,7 +459,8 @@ $totalPrizePool = $paidCount * 500;
                 <?php endforeach; ?>
               </div>
             </div>
-          <?php endforeach; ?>
+          </div>
+        <?php endforeach; ?>
         <?php endif; ?>
         </div>
       </div>
@@ -816,6 +829,26 @@ $totalPrizePool = $paidCount * 500;
       }
     }
 
+    // Control de colapso de días
+    function toggleDayGroup(headerEl) {
+      const groupEl = headerEl.closest('.day-group');
+      const contentEl = groupEl.querySelector('.day-content');
+      const iconEl = groupEl.querySelector('.day-toggle-icon');
+      const isCollapsed = contentEl.style.maxHeight === '0px' || contentEl.style.maxHeight === '';
+      
+      if (isCollapsed) {
+        contentEl.style.maxHeight = '2500px';
+        contentEl.style.opacity = '1';
+        iconEl.textContent = 'Ocultar ▲';
+        groupEl.classList.remove('day-group--collapsed');
+      } else {
+        contentEl.style.maxHeight = '0px';
+        contentEl.style.opacity = '0';
+        iconEl.textContent = 'Mostrar ▼';
+        groupEl.classList.add('day-group--collapsed');
+      }
+    }
+
     // Control de pestañas (Partidos / Grupos)
     function switchTab(tabId) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -925,6 +958,6 @@ $totalPrizePool = $paidCount * 500;
     </div>
   </div>
 
-  <script src="js/app.js?v=3.23"></script>
+  <script src="js/app.js?v=3.24"></script>
 </body>
 </html>
