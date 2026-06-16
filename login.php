@@ -21,14 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if (!$user) {
-            // Auto-registro
-            $role = (strtolower($username) === 'admin') ? 'ADMIN' : 'USER';
-            $ins = $db->prepare("INSERT INTO `User` (username, password, role, points, createdAt, updatedAt) VALUES (?, ?, ?, 0, NOW(), NOW())");
-            $ins->execute([$username, $password, $role]);
-            $userId = $db->lastInsertId();
-            $_SESSION['user_id'] = $userId;
-            header('Location: index.php');
-            exit;
+            $error = 'El registro de nuevos participantes está cerrado. Para ingresar, por favor envía un mensaje de WhatsApp al ' . REGISTRATION_CONTACT_WHATSAPP . '.';
         } else {
             if ($user['password'] !== $password) {
                 $error = 'Contraseña incorrecta.';
@@ -49,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <title>Iniciar Sesión – Quiniela Mundial 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.29" />
+  <link rel="stylesheet" href="css/style.css?v=3.30" />
 </head>
 <body>
   <div class="login-page fade-in">
@@ -78,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </form>
 
       <p class="login-note">
-        Si es la primera vez, escribe tu nombre y una contraseña para registrarte automáticamente.
+        El registro de nuevos usuarios está cerrado. Si deseas participar, envía un mensaje de WhatsApp al <?= htmlspecialchars(REGISTRATION_CONTACT_WHATSAPP) ?>.
       </p>
     </div>
   </div>

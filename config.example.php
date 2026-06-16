@@ -31,6 +31,7 @@ define('DB_PORT', '3306');
 define('DB_NAME', 'TU_NOMBRE_DE_BD');
 define('DB_USER', 'TU_USUARIO_DE_BD');
 define('DB_PASS', 'TU_CONTRASENA_DE_BD');
+define('REGISTRATION_CONTACT_WHATSAPP', 'TU_TELEFONO_AQUI');
 
 // ── ESPN API pública (NO necesita registro ni API key) ──
 define('ESPN_BASE', 'https://site.api.espn.com/apis/site/v2/sports/soccer');
