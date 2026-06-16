@@ -80,7 +80,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.28" />
+  <link rel="stylesheet" href="css/style.css?v=3.29" />
   <!-- Chart.js para el gráfico de posiciones -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -611,19 +611,30 @@ $totalPrizePool = $paidCount * 500;
                           <tr><td style="color:var(--text-secondary); text-align:center; padding:1rem;">Ninguna</td></tr>
                         <?php 
                         else:
-                          foreach ($yellowLeaders as $player => $info):
+                          foreach ($yellowLeaders as $team => $info):
                         ?>
-                          <tr>
+                          <tr class="team-card-row" onclick="toggleTeamCardDetails(this)">
                             <td>
-                              <div style="font-weight:700"><?= htmlspecialchars($player) ?></div>
-                              <div style="font-size: 0.7rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; margin-top: 0.1rem;">
+                              <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
                                 <?php if (!empty($info['flag'])): ?>
-                                  <img src="<?= $info['flag'] ?>" alt="<?= htmlspecialchars($info['team']) ?>" style="width: 14px; height: auto; border-radius: 1px;" />
+                                  <img src="<?= $info['flag'] ?>" alt="<?= htmlspecialchars($info['team']) ?>" style="width: 18px; height: auto; border-radius: 2px;" />
                                 <?php endif; ?>
                                 <span><?= htmlspecialchars($info['team']) ?></span>
                               </div>
                             </td>
                             <td class="num" style="font-weight:800; color:#ffaa00"><?= $info['count'] ?></td>
+                          </tr>
+                          <tr class="team-card-details-row" style="display: none;">
+                            <td colspan="2" style="padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                              <ul style="list-style: none; margin: 0; padding: 0; font-size: 0.75rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem;">
+                                <?php foreach ($info['details'] as $detail): ?>
+                                  <li style="display: flex; align-items: center; gap: 0.3rem;">
+                                    <span>🟨</span>
+                                    <span><?= htmlspecialchars($detail) ?></span>
+                                  </li>
+                                <?php endforeach; ?>
+                              </ul>
+                            </td>
                           </tr>
                         <?php 
                           endforeach;
@@ -644,19 +655,30 @@ $totalPrizePool = $paidCount * 500;
                           <tr><td style="color:var(--text-secondary); text-align:center; padding:1rem;">Ninguna</td></tr>
                         <?php 
                         else:
-                          foreach ($redLeaders as $player => $info):
+                          foreach ($redLeaders as $team => $info):
                         ?>
-                          <tr>
+                          <tr class="team-card-row" onclick="toggleTeamCardDetails(this)">
                             <td>
-                              <div style="font-weight:700"><?= htmlspecialchars($player) ?></div>
-                              <div style="font-size: 0.7rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; margin-top: 0.1rem;">
+                              <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
                                 <?php if (!empty($info['flag'])): ?>
-                                  <img src="<?= $info['flag'] ?>" alt="<?= htmlspecialchars($info['team']) ?>" style="width: 14px; height: auto; border-radius: 1px;" />
+                                  <img src="<?= $info['flag'] ?>" alt="<?= htmlspecialchars($info['team']) ?>" style="width: 18px; height: auto; border-radius: 2px;" />
                                 <?php endif; ?>
                                 <span><?= htmlspecialchars($info['team']) ?></span>
                               </div>
                             </td>
                             <td class="num" style="font-weight:800; color:#ff0055"><?= $info['count'] ?></td>
+                          </tr>
+                          <tr class="team-card-details-row" style="display: none;">
+                            <td colspan="2" style="padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                              <ul style="list-style: none; margin: 0; padding: 0; font-size: 0.75rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem;">
+                                <?php foreach ($info['details'] as $detail): ?>
+                                  <li style="display: flex; align-items: center; gap: 0.3rem;">
+                                    <span>🟥</span>
+                                    <span><?= htmlspecialchars($detail) ?></span>
+                                  </li>
+                                <?php endforeach; ?>
+                              </ul>
+                            </td>
                           </tr>
                         <?php 
                           endforeach;
@@ -1011,6 +1033,6 @@ $totalPrizePool = $paidCount * 500;
     🏆 Tabla
   </button>
 
-  <script src="js/app.js?v=3.28"></script>
+  <script src="js/app.js?v=3.29"></script>
 </body>
 </html>

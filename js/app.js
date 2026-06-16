@@ -468,22 +468,34 @@ function updateTopCards(topCards) {
   const tbodyRed = document.getElementById('top-reds-body');
 
   if (tbodyYellow) {
-    const yellows = Object.entries(topCards.yellow || {});
+    const yellows = Object.values(topCards.yellow || {});
     if (yellows.length === 0) {
       tbodyYellow.innerHTML = '<tr><td style="color:var(--text-secondary); text-align:center; padding:1rem;">Ninguna</td></tr>';
     } else {
-      tbodyYellow.innerHTML = yellows.map(([player, info]) => {
-        const flagHtml = info.flag ? `<img src="${info.flag}" alt="${escapeHtml(info.team)}" style="width: 14px; height: auto; border-radius: 1px;" />` : '';
+      tbodyYellow.innerHTML = yellows.map(info => {
+        const flagHtml = info.flag ? `<img src="${info.flag}" alt="${escapeHtml(info.team)}" style="width: 18px; height: auto; border-radius: 2px;" />` : '';
+        const detailsHtml = (info.details || []).map(detail => `
+          <li style="display: flex; align-items: center; gap: 0.3rem;">
+            <span>🟨</span>
+            <span>${escapeHtml(detail)}</span>
+          </li>
+        `).join('');
         return `
-          <tr>
+          <tr class="team-card-row" onclick="toggleTeamCardDetails(this)">
             <td>
-              <div style="font-weight:700">${escapeHtml(player)}</div>
-              <div style="font-size: 0.7rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; margin-top: 0.1rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
                 ${flagHtml}
                 <span>${escapeHtml(info.team)}</span>
               </div>
             </td>
             <td class="num" style="font-weight:800; color:#ffaa00">${info.count}</td>
+          </tr>
+          <tr class="team-card-details-row" style="display: none;">
+            <td colspan="2" style="padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.02); border-radius: 4px;">
+              <ul style="list-style: none; margin: 0; padding: 0; font-size: 0.75rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem;">
+                ${detailsHtml}
+              </ul>
+            </td>
           </tr>
         `;
       }).join('');
@@ -491,28 +503,54 @@ function updateTopCards(topCards) {
   }
 
   if (tbodyRed) {
-    const reds = Object.entries(topCards.red || {});
+    const reds = Object.values(topCards.red || {});
     if (reds.length === 0) {
       tbodyRed.innerHTML = '<tr><td style="color:var(--text-secondary); text-align:center; padding:1rem;">Ninguna</td></tr>';
     } else {
-      tbodyRed.innerHTML = reds.map(([player, info]) => {
-        const flagHtml = info.flag ? `<img src="${info.flag}" alt="${escapeHtml(info.team)}" style="width: 14px; height: auto; border-radius: 1px;" />` : '';
+      tbodyRed.innerHTML = reds.map(info => {
+        const flagHtml = info.flag ? `<img src="${info.flag}" alt="${escapeHtml(info.team)}" style="width: 18px; height: auto; border-radius: 2px;" />` : '';
+        const detailsHtml = (info.details || []).map(detail => `
+          <li style="display: flex; align-items: center; gap: 0.3rem;">
+            <span>🟥</span>
+            <span>${escapeHtml(detail)}</span>
+          </li>
+        `).join('');
         return `
-          <tr>
+          <tr class="team-card-row" onclick="toggleTeamCardDetails(this)">
             <td>
-              <div style="font-weight:700">${escapeHtml(player)}</div>
-              <div style="font-size: 0.7rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; margin-top: 0.1rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
                 ${flagHtml}
                 <span>${escapeHtml(info.team)}</span>
               </div>
             </td>
             <td class="num" style="font-weight:800; color:#ff0055">${info.count}</td>
           </tr>
+          <tr class="team-card-details-row" style="display: none;">
+            <td colspan="2" style="padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.02); border-radius: 4px;">
+              <ul style="list-style: none; margin: 0; padding: 0; font-size: 0.75rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem;">
+                ${detailsHtml}
+              </ul>
+            </td>
+          </tr>
         `;
       }).join('');
     }
   }
 }
+
+function toggleTeamCardDetails(row) {
+  const detailsRow = row.nextElementSibling;
+  if (!detailsRow || !detailsRow.classList.contains('team-card-details-row')) return;
+  const isHidden = detailsRow.style.display === 'none';
+  if (isHidden) {
+    detailsRow.style.display = 'table-row';
+    row.classList.add('active-row');
+  } else {
+    detailsRow.style.display = 'none';
+    row.classList.remove('active-row');
+  }
+}
+
 
 function escapeHtml(text) {
   const div = document.createElement('div');

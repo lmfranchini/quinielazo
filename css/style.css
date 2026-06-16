@@ -1973,3 +1973,32 @@ input:disabled + .switch-slider {
     display: flex;
   }
 }
+
+/* ── Líderes de Tarjetas Interactivo ── */
+.team-card-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.team-card-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.team-card-row:active {
+  transform: scale(0.99);
+}
+.team-card-row.active-row {
+  background: rgba(255, 255, 255, 0.03);
+}
+.team-card-details-row {
+  transition: all 0.3s ease;
+}
+.team-card-details-row td {
+  border-top: none !important;
+}
+.team-card-details-row ul {
+  animation: detailsFadeIn 0.2s ease-out forwards;
+}
+@keyframes detailsFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
