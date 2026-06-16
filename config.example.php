@@ -574,51 +574,54 @@ function getTopCards($db) {
         $yellowsB = isset($cData['teamB']['yellow']) ? $cData['teamB']['yellow'] : array();
         $redsB = isset($cData['teamB']['red']) ? $cData['teamB']['red'] : array();
         
-        foreach ($yellowsA as $cardStr) {
-            $pName = preg_replace('/\s+\d+.*$/', '', $cardStr);
-            $pName = trim($pName);
-            if ($pName) {
-                if (!isset($yellows[$pName])) {
-                    $yellows[$pName] = array('count' => 0, 'team' => $teamA, 'flag' => getFlagUrl($teamA));
-                }
-                $yellows[$pName]['count']++;
+        // Acumular amarillas para el Equipo A
+        if (count($yellowsA) > 0) {
+            if (!isset($yellows[$teamA])) {
+                $yellows[$teamA] = array('team' => $teamA, 'flag' => getFlagUrl($teamA), 'count' => 0, 'details' => array());
             }
+            $yellows[$teamA]['count'] += count($yellowsA);
+            $mappedYellowsA = array_map(function($cardStr) use ($teamB) {
+                return $cardStr . " (vs " . $teamB . ")";
+            }, $yellowsA);
+            $yellows[$teamA]['details'] = array_merge($yellows[$teamA]['details'], $mappedYellowsA);
+        }
+        // Acumular amarillas para el Equipo B
+        if (count($yellowsB) > 0) {
+            if (!isset($yellows[$teamB])) {
+                $yellows[$teamB] = array('team' => $teamB, 'flag' => getFlagUrl($teamB), 'count' => 0, 'details' => array());
+            }
+            $yellows[$teamB]['count'] += count($yellowsB);
+            $mappedYellowsB = array_map(function($cardStr) use ($teamA) {
+                return $cardStr . " (vs " . $teamA . ")";
+            }, $yellowsB);
+            $yellows[$teamB]['details'] = array_merge($yellows[$teamB]['details'], $mappedYellowsB);
         }
         
-        foreach ($yellowsB as $cardStr) {
-            $pName = preg_replace('/\s+\d+.*$/', '', $cardStr);
-            $pName = trim($pName);
-            if ($pName) {
-                if (!isset($yellows[$pName])) {
-                    $yellows[$pName] = array('count' => 0, 'team' => $teamB, 'flag' => getFlagUrl($teamB));
-                }
-                $yellows[$pName]['count']++;
+        // Acumular rojas para el Equipo A
+        if (count($redsA) > 0) {
+            if (!isset($reds[$teamA])) {
+                $reds[$teamA] = array('team' => $teamA, 'flag' => getFlagUrl($teamA), 'count' => 0, 'details' => array());
             }
+            $reds[$teamA]['count'] += count($redsA);
+            $mappedRedsA = array_map(function($cardStr) use ($teamB) {
+                return $cardStr . " (vs " . $teamB . ")";
+            }, $redsA);
+            $reds[$teamA]['details'] = array_merge($reds[$teamA]['details'], $mappedRedsA);
         }
-        
-        foreach ($redsA as $cardStr) {
-            $pName = preg_replace('/\s+\d+.*$/', '', $cardStr);
-            $pName = trim($pName);
-            if ($pName) {
-                if (!isset($reds[$pName])) {
-                    $reds[$pName] = array('count' => 0, 'team' => $teamA, 'flag' => getFlagUrl($teamA));
-                }
-                $reds[$pName]['count']++;
+        // Acumular rojas para el Equipo B
+        if (count($redsB) > 0) {
+            if (!isset($reds[$teamB])) {
+                $reds[$teamB] = array('team' => $teamB, 'flag' => getFlagUrl($teamB), 'count' => 0, 'details' => array());
             }
-        }
-        
-        foreach ($redsB as $cardStr) {
-            $pName = preg_replace('/\s+\d+.*$/', '', $cardStr);
-            $pName = trim($pName);
-            if ($pName) {
-                if (!isset($reds[$pName])) {
-                    $reds[$pName] = array('count' => 0, 'team' => $teamB, 'flag' => getFlagUrl($teamB));
-                }
-                $reds[$pName]['count']++;
-            }
+            $reds[$teamB]['count'] += count($redsB);
+            $mappedRedsB = array_map(function($cardStr) use ($teamA) {
+                return $cardStr . " (vs " . $teamA . ")";
+            }, $redsB);
+            $reds[$teamB]['details'] = array_merge($reds[$teamB]['details'], $mappedRedsB);
         }
     }
     
+    // Ordenar de forma descendente por total
     uasort($yellows, function($a, $b) {
         return $b['count'] - $a['count'];
     });
