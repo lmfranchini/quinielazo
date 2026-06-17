@@ -393,11 +393,9 @@ function getTopScorers($db) {
         
         foreach ($teamAScorers as $sc) {
             if (stripos($sc, '(ag.)') !== false) {
-                // Autogol va para el equipo contrario
-                $teamName = $teamB;
-            } else {
-                $teamName = $teamA;
+                continue; // Los autogoles no cuentan para la estadística personal de goleo del jugador
             }
+            $teamName = $teamA;
             
             // Extraer nombre del jugador (ej. Lionel Messi 12' -> Lionel Messi)
             $playerName = preg_replace('/\s+\d+.*$/', '', $sc);
@@ -412,11 +410,9 @@ function getTopScorers($db) {
         
         foreach ($teamBScorers as $sc) {
             if (stripos($sc, '(ag.)') !== false) {
-                // Autogol va para el equipo contrario
-                $teamName = $teamA;
-            } else {
-                $teamName = $teamB;
+                continue; // Los autogoles no cuentan para la estadística personal de goleo del jugador
             }
+            $teamName = $teamB;
             
             // Extraer nombre del jugador (ej. Lionel Messi 12' -> Lionel Messi)
             $playerName = preg_replace('/\s+\d+.*$/', '', $sc);
