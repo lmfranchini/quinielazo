@@ -846,7 +846,7 @@ $totalPrizePool = $paidCount * 500;
       </div>
 
       <div class="leaderboard" id="leaderboard">
-        <?php $medals = ['🥇', '🥈', '🥉']; ?>
+        <?php $medals = ['🥇']; ?>
         <?php foreach ($leaderboard as $i => $u): ?>
           <div class="leaderboard-row <?= $i < 3 ? 'top-'.($i+1) : '' ?>">
             <div class="lb-rank"><?= $medals[$i] ?? ($i + 1) ?></div>
