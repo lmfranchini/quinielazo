@@ -21,8 +21,9 @@ $allUsers = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE r
 
 // Calcular puntos proyectados en vivo
 $allPreds = $db->query("
-    SELECT p.userId, p.scoreA AS predA, p.scoreB AS predB, p.points AS confirmedPts,
-           m.scoreA AS mScoreA, m.scoreB AS mScoreB, m.status, m.isFinished
+    SELECT p.userId, p.matchId, p.scoreA AS predA, p.scoreB AS predB, p.points AS confirmedPts,
+           m.scoreA AS mScoreA, m.scoreB AS mScoreB, m.status, m.isFinished,
+           m.teamA, m.teamB
     FROM `Prediction` p INNER JOIN `Match` m ON p.matchId = m.id
 ")->fetchAll();
 
@@ -35,6 +36,45 @@ foreach ($allPreds as $ap) {
     } elseif ($ap['status'] === 'LIVE' || $ap['status'] === 'HALFTIME') {
         $livePts = calculatePoints((int)$ap['predA'], (int)$ap['predB'], $ap['mScoreA'], $ap['mScoreB']);
         $userProjected[$uid]['projected'] += $livePts;
+    }
+}
+
+// Obtener partidos en vivo actuales para mapear predicciones en vivo
+$liveMatches = [];
+foreach ($matches as $m) {
+    if ($m['status'] === 'LIVE' || $m['status'] === 'HALFTIME') {
+        $liveMatches[$m['id']] = [
+            'id'    => (int)$m['id'],
+            'teamA' => $m['teamA'],
+            'teamB' => $m['teamB'],
+            'flagA' => getFlagUrl($m['teamA']),
+            'flagB' => getFlagUrl($m['teamB']),
+        ];
+    }
+}
+
+// Construir predicciones en vivo por usuario
+$livePredsByUser = [];
+foreach ($allUsers as $u) {
+    $uid = (int)$u['id'];
+    $livePredsByUser[$uid] = [];
+    foreach ($liveMatches as $mid => $lm) {
+        $pred = null;
+        foreach ($allPreds as $ap) {
+            if ((int)$ap['userId'] === $uid && (int)$ap['matchId'] === $mid) {
+                $pred = $ap;
+                break;
+            }
+        }
+        $livePredsByUser[$uid][] = [
+            'matchId' => $mid,
+            'teamA'   => $lm['teamA'],
+            'teamB'   => $lm['teamB'],
+            'flagA'   => $lm['flagA'],
+            'flagB'   => $lm['flagB'],
+            'scoreA'  => $pred ? (int)$pred['predA'] : null,
+            'scoreB'  => $pred ? (int)$pred['predB'] : null,
+        ];
     }
 }
 
@@ -80,7 +120,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.30" />
+  <link rel="stylesheet" href="css/style.css?v=3.31" />
   <!-- Chart.js para el gráfico de posiciones -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -806,17 +846,40 @@ $totalPrizePool = $paidCount * 500;
       </div>
 
       <div class="leaderboard" id="leaderboard">
-        <?php $medals = ['🥇']; ?>
+        <?php $medals = ['🥇', '🥈', '🥉']; ?>
         <?php foreach ($leaderboard as $i => $u): ?>
           <div class="leaderboard-row <?= $i < 3 ? 'top-'.($i+1) : '' ?>">
             <div class="lb-rank"><?= $medals[$i] ?? ($i + 1) ?></div>
             <div class="lb-name">
-              <?= htmlspecialchars($u['username']) ?>
-              <?php if (!empty($u['hasPaid'])): ?>
-                <span class="paid-indicator" title="Participa por la bolsa de premios">$</span>
-              <?php endif; ?>
-              <?php if ((int)$u['id'] === (int)$user['id']): ?>
-                <span style="font-size:0.7rem; color:var(--accent-color)"> (tú)</span>
+              <div>
+                <?= htmlspecialchars($u['username']) ?>
+                <?php if (!empty($u['hasPaid'])): ?>
+                  <span class="paid-indicator" title="Participa por la bolsa de premios">$</span>
+                <?php endif; ?>
+                <?php if ((int)$u['id'] === (int)$user['id']): ?>
+                  <span style="font-size:0.7rem; color:var(--accent-color)"> (tú)</span>
+                <?php endif; ?>
+              </div>
+              <?php 
+              $uLivePreds = $livePredsByUser[(int)$u['id']] ?? [];
+              if (!empty($uLivePreds)):
+              ?>
+                <div class="lb-live-preds" style="font-size: 0.72rem; color: var(--text-secondary); display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.35rem; width: 100%;">
+                  <span style="font-size: 0.62rem; text-transform: uppercase; color: var(--fifa-cyan); font-weight: 800; letter-spacing: 0.5px; opacity: 0.85;">En vivo:</span>
+                  <?php foreach ($uLivePreds as $lp): ?>
+                    <span style="display: inline-flex; align-items: center; gap: 0.2rem; background: rgba(255,255,255,0.04); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.03);" title="<?= htmlspecialchars($lp['teamA']) ?> vs <?= htmlspecialchars($lp['teamB']) ?>">
+                      <?php if ($lp['flagA']): ?>
+                        <img src="<?= $lp['flagA'] ?>" alt="<?= htmlspecialchars($lp['teamA']) ?>" style="width: 13px; height: auto; border-radius: 1px; display: block;" />
+                      <?php endif; ?>
+                      <strong style="color: white; font-size: 0.72rem; font-family: 'Inter', sans-serif;">
+                        <?= $lp['scoreA'] !== null ? $lp['scoreA'] : '?' ?>-<?= $lp['scoreB'] !== null ? $lp['scoreB'] : '?' ?>
+                      </strong>
+                      <?php if ($lp['flagB']): ?>
+                        <img src="<?= $lp['flagB'] ?>" alt="<?= htmlspecialchars($lp['teamB']) ?>" style="width: 13px; height: auto; border-radius: 1px; display: block;" />
+                      <?php endif; ?>
+                    </span>
+                  <?php endforeach; ?>
+                </div>
               <?php endif; ?>
             </div>
             <div class="lb-score-block">
@@ -1033,6 +1096,6 @@ $totalPrizePool = $paidCount * 500;
     🏆 Tabla
   </button>
 
-  <script src="js/app.js?v=3.30"></script>
+  <script src="js/app.js?v=3.31"></script>
 </body>
 </html>

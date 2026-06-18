@@ -322,7 +322,7 @@ function updateLeaderboard(leaderboard) {
     participantsEl.textContent = `${paidCount} ${paidCount === 1 ? 'participante' : 'participantes'} de $500 pesos`;
   }
 
-  const medals = ['🥇'];
+  const medals = ['🥇', '🥈', '🥉'];
 
   container.innerHTML = leaderboard.map((u, i) => {
     const topClass = i < 3 ? `top-${i + 1}` : '';
@@ -332,10 +332,38 @@ function updateLeaderboard(leaderboard) {
       ? `<div class="lb-projected">+${u.projected} en vivo</div>`
       : '';
 
+    let livePredsHtml = '';
+    if (u.livePredictions && u.livePredictions.length > 0) {
+      const predChips = u.livePredictions.map(lp => {
+        const scoreA = lp.scoreA !== null ? lp.scoreA : '?';
+        const scoreB = lp.scoreB !== null ? lp.scoreB : '?';
+        const flagA = lp.flagA ? `<img src="${lp.flagA}" alt="${escapeHtml(lp.teamA)}" style="width: 13px; height: auto; border-radius: 1px; display: block;" />` : '';
+        const flagB = lp.flagB ? `<img src="${lp.flagB}" alt="${escapeHtml(lp.teamB)}" style="width: 13px; height: auto; border-radius: 1px; display: block;" />` : '';
+        
+        return `
+          <span style="display: inline-flex; align-items: center; gap: 0.2rem; background: rgba(255,255,255,0.04); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.03);" title="${escapeHtml(lp.teamA)} vs ${escapeHtml(lp.teamB)}">
+            ${flagA}
+            <strong style="color: white; font-size: 0.72rem; font-family: 'Inter', sans-serif;">${scoreA}-${scoreB}</strong>
+            ${flagB}
+          </span>
+        `;
+      }).join('');
+      
+      livePredsHtml = `
+        <div class="lb-live-preds" style="font-size: 0.72rem; color: var(--text-secondary); display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.35rem; width: 100%;">
+          <span style="font-size: 0.62rem; text-transform: uppercase; color: var(--fifa-cyan); font-weight: 800; letter-spacing: 0.5px; opacity: 0.85;">En vivo:</span>
+          ${predChips}
+        </div>
+      `;
+    }
+
     return `
       <div class="leaderboard-row ${topClass}">
         <div class="lb-rank">${medals[i] ?? (i + 1)}</div>
-        <div class="lb-name">${escapeHtml(u.username)}${paidTag}${youTag}</div>
+        <div class="lb-name">
+          <div>${escapeHtml(u.username)}${paidTag}${youTag}</div>
+          ${livePredsHtml}
+        </div>
         <div class="lb-score-block">
           <div class="lb-points">${u.total}</div>
           <div class="lb-pts-label">pts</div>

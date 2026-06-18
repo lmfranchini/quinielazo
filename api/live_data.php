@@ -103,18 +103,54 @@ foreach ($allPreds as $ap) {
     }
 }
 
+// Obtener partidos en vivo actuales para mapear predicciones en vivo en la respuesta JSON
+$liveMatches = [];
+foreach ($matches as $m) {
+    if ($m['status'] === 'LIVE' || $m['status'] === 'HALFTIME') {
+        $liveMatches[$m['id']] = [
+            'id'    => (int)$m['id'],
+            'teamA' => $m['teamA'],
+            'teamB' => $m['teamB'],
+            'flagA' => getFlagUrl($m['teamA']),
+            'flagB' => getFlagUrl($m['teamB']),
+        ];
+    }
+}
+
+// Indexar predicciones por usuario y partido para rendimiento O(1)
+$predsIndex = [];
+foreach ($allPreds as $ap) {
+    $predsIndex[(int)$ap['userId']][(int)$ap['matchId']] = $ap;
+}
+
 $leaderboard = [];
 foreach ($users as $u) {
     $uid = (int)$u['id'];
     $pts = $userPoints[$uid] ?? ['confirmed' => 0, 'projected' => 0];
+    
+    $uLivePreds = [];
+    foreach ($liveMatches as $mid => $lm) {
+        $pred = isset($predsIndex[$uid][$mid]) ? $predsIndex[$uid][$mid] : null;
+        $uLivePreds[] = [
+            'matchId' => $mid,
+            'teamA'   => $lm['teamA'],
+            'teamB'   => $lm['teamB'],
+            'flagA'   => $lm['flagA'],
+            'flagB'   => $lm['flagB'],
+            'scoreA'  => $pred ? (int)$pred['predA'] : null,
+            'scoreB'  => $pred ? (int)$pred['predB'] : null,
+        ];
+    }
+    
     $leaderboard[] = [
-        'id'        => $uid,
-        'username'  => $u['username'],
-        'confirmed' => $pts['confirmed'],
-        'projected' => $pts['projected'],
-        'total'     => $pts['confirmed'] + $pts['projected'],
-        'isYou'     => ($uid === $userId),
-        'hasPaid'   => (bool)$u['hasPaid'],
+        'id'              => $uid,
+        'username'        => $u['username'],
+        'confirmed'       => $pts['confirmed'],
+        'projected'       => $pts['projected'],
+        'total'           => $pts['confirmed'] + $pts['projected'],
+        'isYou'           => ($uid === $userId),
+        'hasPaid'         => (bool)$u['hasPaid'],
+        'livePredictions' => $uLivePreds,
     ];
 }
 
