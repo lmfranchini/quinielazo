@@ -335,15 +335,20 @@ function updateLeaderboard(leaderboard) {
     let livePredsHtml = '';
     if (u.livePredictions && u.livePredictions.length > 0) {
       const predChips = u.livePredictions.map(lp => {
-        const scoreA = lp.scoreA !== null ? lp.scoreA : '?';
-        const scoreB = lp.scoreB !== null ? lp.scoreB : '?';
         const flagA = lp.flagA ? `<img src="${lp.flagA}" alt="${escapeHtml(lp.teamA)}" style="width: 13px; height: auto; border-radius: 1px; display: block;" />` : '';
         const flagB = lp.flagB ? `<img src="${lp.flagB}" alt="${escapeHtml(lp.teamB)}" style="width: 13px; height: auto; border-radius: 1px; display: block;" />` : '';
+        
+        let predictionValue = '';
+        if (lp.scoreA !== null && lp.scoreB !== null) {
+          predictionValue = `<strong style="color: white; font-size: 0.72rem; font-family: 'Inter', sans-serif;">${lp.scoreA}-${lp.scoreB}</strong>`;
+        } else {
+          predictionValue = `<span style="color: var(--text-secondary); font-size: 0.65rem; font-weight: 600; font-family: 'Inter', sans-serif;">Sin pronóstico</span>`;
+        }
         
         return `
           <span style="display: inline-flex; align-items: center; gap: 0.2rem; background: rgba(255,255,255,0.04); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.03);" title="${escapeHtml(lp.teamA)} vs ${escapeHtml(lp.teamB)}">
             ${flagA}
-            <strong style="color: white; font-size: 0.72rem; font-family: 'Inter', sans-serif;">${scoreA}-${scoreB}</strong>
+            ${predictionValue}
             ${flagB}
           </span>
         `;

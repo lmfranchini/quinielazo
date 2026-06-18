@@ -871,9 +871,13 @@ $totalPrizePool = $paidCount * 500;
                       <?php if ($lp['flagA']): ?>
                         <img src="<?= $lp['flagA'] ?>" alt="<?= htmlspecialchars($lp['teamA']) ?>" style="width: 13px; height: auto; border-radius: 1px; display: block;" />
                       <?php endif; ?>
-                      <strong style="color: white; font-size: 0.72rem; font-family: 'Inter', sans-serif;">
-                        <?= $lp['scoreA'] !== null ? $lp['scoreA'] : '?' ?>-<?= $lp['scoreB'] !== null ? $lp['scoreB'] : '?' ?>
-                      </strong>
+                      <?php if ($lp['scoreA'] !== null && $lp['scoreB'] !== null): ?>
+                        <strong style="color: white; font-size: 0.72rem; font-family: 'Inter', sans-serif;">
+                          <?= $lp['scoreA'] ?>-<?= $lp['scoreB'] ?>
+                        </strong>
+                      <?php else: ?>
+                        <span style="color: var(--text-secondary); font-size: 0.65rem; font-weight: 600; font-family: 'Inter', sans-serif;">Sin pronóstico</span>
+                      <?php endif; ?>
                       <?php if ($lp['flagB']): ?>
                         <img src="<?= $lp['flagB'] ?>" alt="<?= htmlspecialchars($lp['teamB']) ?>" style="width: 13px; height: auto; border-radius: 1px; display: block;" />
                       <?php endif; ?>
