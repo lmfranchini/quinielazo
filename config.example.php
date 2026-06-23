@@ -99,6 +99,73 @@ function getFlagUrl($team) {
 }
 
 /**
+ * Resuelve dinámicamente el nombre de un equipo a partir de su placeholder o ganador/perdedor de partido anterior.
+ */
+function resolvePlaceholderTeam($teamPlaceholder, $db, &$flagUrl = '') {
+    $flagUrl = '';
+    // 1. Si es un placeholder de grupo: 1A, 2A, 1B, 2B, ..., 1L, 2L
+    if (preg_match('/^([12])([A-L])$/', $teamPlaceholder, $matches)) {
+        $pos = (int)$matches[1]; // 1 o 2
+        $groupLetter = $matches[2]; // A a L
+        $groupName = 'Grupo ' . $groupLetter;
+        
+        // Obtener posiciones del grupo
+        $standings = getGroupStandings($db);
+        if (isset($standings[$groupName])) {
+            $groupTeams = $standings[$groupName];
+            // Para considerarlo confirmado, verificamos que todos hayan jugado 3 partidos
+            $isFinished = true;
+            foreach ($groupTeams as $t) {
+                if ($t['pj'] < 3) {
+                    $isFinished = false;
+                    break;
+                }
+            }
+            if ($isFinished && isset($groupTeams[$pos - 1])) {
+                $team = $groupTeams[$pos - 1];
+                $flagUrl = $team['flag'];
+                return $team['name'];
+            }
+        }
+    }
+    
+    // 2. Si es ganador/perdedor de un partido anterior: "Ganador {id}" o "Perdedor {id}"
+    if (preg_match('/^(Ganador|Perdedor)\s+(\d+)$/', $teamPlaceholder, $matches)) {
+        $type = $matches[1]; // Ganador o Perdedor
+        $prevMatchId = (int)$matches[2];
+        
+        $stmt = $db->prepare("SELECT teamA, teamB, scoreA, scoreB, isFinished, winner FROM `Match` WHERE id = ?");
+        $stmt->execute([$prevMatchId]);
+        $m = $stmt->fetch();
+        if ($m && !empty($m['winner'])) {
+            if ($type === 'Ganador') {
+                $flagUrl = getFlagUrl($m['winner']);
+                return $m['winner'];
+            } else {
+                // Perdedor
+                $loser = ($m['winner'] === $m['teamA']) ? $m['teamB'] : $m['teamA'];
+                $flagUrl = getFlagUrl($loser);
+                return $loser;
+            }
+        }
+    }
+    
+    // 3. Caso por defecto (placeholder literal o si aún no se ha definido el ganador)
+    $flagUrl = getFlagUrl($teamPlaceholder);
+    return $teamPlaceholder;
+}
+
+/**
+ * Determina si el nombre de un equipo es un placeholder de la fase final.
+ */
+function isPlaceholderTeam($teamName) {
+    if (preg_match('/^[12][A-L]$/', $teamName)) return true;
+    if (preg_match('/^(Ganador|Perdedor)\s+\d+$/', $teamName)) return true;
+    if (preg_match('/^3[A-L\/]+$/', $teamName)) return true;
+    return false;
+}
+
+/**
  * Mapeo de nombres de equipos: ESPN (inglés) → nombre español en nuestra DB
  */
 function getTeamNameMap() {
