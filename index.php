@@ -102,6 +102,45 @@ foreach ($matches as $match) {
     if (in_array($match['status'], ['LIVE', 'HALFTIME'])) $hasLive = true;
 }
 
+// Determinar el grupo del día actual para auto-scrollear
+$groupDates = [];
+foreach ($grouped as $dayKey => $dayMatches) {
+    if (!empty($dayMatches)) {
+        $firstMatch = $dayMatches[0];
+        $dt = new DateTime($firstMatch['date'], new DateTimeZone('UTC'));
+        $dt->setTimezone(new DateTimeZone('America/Mexico_City'));
+        $groupDates[$dayKey] = $dt->format('Y-m-d');
+    }
+}
+
+$today = new DateTime('now', new DateTimeZone('America/Mexico_City'));
+$todayYmd = $today->format('Y-m-d');
+
+$scrollToKey = null;
+// 1. Buscar coincidencia exacta del día de hoy
+foreach ($groupDates as $dayKey => $ymd) {
+    if ($ymd === $todayYmd) {
+        $scrollToKey = $dayKey;
+        break;
+    }
+}
+
+// 2. Si no hay partidos hoy, buscar el primer día con partidos en el futuro
+if ($scrollToKey === null) {
+    foreach ($groupDates as $dayKey => $ymd) {
+        if ($ymd > $todayYmd) {
+            $scrollToKey = $dayKey;
+            break;
+        }
+    }
+}
+
+// 3. Si todos los partidos ya pasaron, scrollear al último grupo
+if ($scrollToKey === null && !empty($groupDates)) {
+    $keys = array_keys($groupDates);
+    $scrollToKey = end($keys);
+}
+
 // Calcular bolsa acumulada
 $paidCount = 0;
 foreach ($leaderboard as $u) {
@@ -120,7 +159,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.31" />
+  <link rel="stylesheet" href="css/style.css?v=3.32" />
   <!-- Chart.js para el gráfico de posiciones -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -129,6 +168,7 @@ $totalPrizePool = $paidCount * 500;
   <!-- Top Bar -->
   <div class="top-bar">
     <span>Hola, <strong><?= htmlspecialchars($user['username']) ?></strong></span>
+    <a href="fase_final.php" class="btn-admin" style="background: linear-gradient(135deg, var(--fifa-purple), var(--fifa-magenta)); margin-right: 0.5rem;">🏆 Fase Final</a>
     <?php if ($user['role'] === 'ADMIN'): ?>
       <a href="admin.php" class="btn-admin">⚙️ Panel Admin</a>
     <?php endif; ?>
@@ -245,8 +285,10 @@ $totalPrizePool = $paidCount * 500;
                     }
                 }
             }
+            $isTarget = ($day === $scrollToKey);
+            $isCollapsed = $allFinished && !$isTarget;
           ?>
-            <div class="day-group <?= $allFinished ? 'day-group--collapsed' : '' ?>">
+            <div class="day-group <?= $isCollapsed ? 'day-group--collapsed' : '' ?>" <?= $isTarget ? 'id="scroll-target"' : '' ?>>
               <div class="day-header" onclick="toggleDayGroup(this)">
                 <span>
                   <?= htmlspecialchars($day) ?>
@@ -254,9 +296,9 @@ $totalPrizePool = $paidCount * 500;
                     <span class="day-points-badge">+<?= $dayPoints ?> pts</span>
                   <?php endif; ?>
                 </span>
-                <span class="day-toggle-icon"><?= $allFinished ? 'Mostrar ▼' : 'Ocultar ▲' ?></span>
+                <span class="day-toggle-icon"><?= $isCollapsed ? 'Mostrar ▼' : 'Ocultar ▲' ?></span>
               </div>
-              <div class="day-content" style="<?= $allFinished ? 'max-height: 0px; overflow: hidden; opacity: 0;' : 'max-height: none;' ?>">
+              <div class="day-content" style="<?= $isCollapsed ? 'max-height: 0px; overflow: hidden; opacity: 0;' : 'max-height: none;' ?>">
                 <div class="match-grid">
                 <?php foreach ($dayMatches as $match):
                   $pred = $predMap[$match['id']] ?? null;
@@ -1100,6 +1142,6 @@ $totalPrizePool = $paidCount * 500;
     🏆 Tabla
   </button>
 
-  <script src="js/app.js?v=3.31"></script>
+  <script src="js/app.js?v=3.32"></script>
 </body>
 </html>

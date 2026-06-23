@@ -16,9 +16,39 @@ if ($matchId <= 0) {
 try {
     $db = getDB();
 
-    // Actualizar resultado del partido
-    $stmt = $db->prepare("UPDATE `Match` SET scoreA = ?, scoreB = ?, isFinished = 1, updatedAt = NOW() WHERE id = ?");
-    $stmt->execute([$scoreA, $scoreB, $matchId]);
+    // Determinar el ganador (winner) para partidos de fase final (IDs >= 148)
+    $winner = null;
+    if ($matchId >= 148) {
+        $stmtMatch = $db->prepare("SELECT teamA, teamB FROM `Match` WHERE id = ?");
+        $stmtMatch->execute([$matchId]);
+        $mInfo = $stmtMatch->fetch();
+        if ($mInfo) {
+            $flagA = ''; $flagB = '';
+            $resolvedA = resolvePlaceholderTeam($mInfo['teamA'], $db, $flagA);
+            $resolvedB = resolvePlaceholderTeam($mInfo['teamB'], $db, $flagB);
+            
+            if ($scoreA > $scoreB) {
+                $winner = $resolvedA;
+            } elseif ($scoreB > $scoreA) {
+                $winner = $resolvedB;
+            } else {
+                // Empate en tiempo regular/extras: requiere que el admin envíe el ganador de los penaltis
+                $winner = trim($data['winner'] ?? '');
+                if ($winner !== $resolvedA && $winner !== $resolvedB) {
+                    if (ob_get_length()) {
+                        @ob_end_clean();
+                    }
+                    header('Content-Type: application/json');
+                    echo json_encode(['success' => false, 'error' => "Para empates en eliminación directa, debes especificar quién avanzó: '$resolvedA' o '$resolvedB'"]);
+                    exit;
+                }
+            }
+        }
+    }
+
+    // Actualizar resultado del partido (e incluir la columna winner)
+    $stmt = $db->prepare("UPDATE `Match` SET scoreA = ?, scoreB = ?, winner = ?, isFinished = 1, updatedAt = NOW() WHERE id = ?");
+    $stmt->execute([$scoreA, $scoreB, $winner, $matchId]);
 
     // Calcular puntos para cada pronóstico de este partido
     $preds = $db->prepare("SELECT * FROM `Prediction` WHERE matchId = ?");

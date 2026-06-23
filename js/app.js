@@ -52,6 +52,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.halftime-show').forEach(el => {
     populateHalftimeShow(el, false);
   });
+
+  // Auto-scroll a la fecha actual (scroll-target)
+  if (!window.location.hash) {
+    const scrollTarget = document.getElementById('scroll-target');
+    if (scrollTarget) {
+      setTimeout(() => {
+        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+    }
+  }
 });
 
 // ── Sistema de actualización en vivo ──
@@ -139,6 +149,40 @@ async function fetchLiveData() {
 function updateMatches(matches) {
   matches.forEach(m => {
     try {
+      // Actualizar tarjetas compactas del árbol (bracket) si están presentes en la página
+      const bracketCard = document.querySelector(`.bracket-match-card[data-match-id="${m.id}"]`);
+      if (bracketCard) {
+        const bScoreAEl = bracketCard.querySelector(`#scoreA-${m.id}`);
+        const bScoreBEl = bracketCard.querySelector(`#scoreB-${m.id}`);
+        if (bScoreAEl && bScoreBEl) {
+          const newA = m.scoreA !== null ? m.scoreA : '–';
+          const newB = m.scoreB !== null ? m.scoreB : '–';
+          if (bScoreAEl.textContent !== String(newA)) {
+            bScoreAEl.textContent = newA;
+          }
+          if (bScoreBEl.textContent !== String(newB)) {
+            bScoreBEl.textContent = newB;
+          }
+        }
+        if (m.status === 'LIVE' || m.status === 'HALFTIME') {
+          bracketCard.classList.add('bracket-match-card--live');
+          let liveTag = bracketCard.querySelector('.bracket-match-live-tag');
+          if (!liveTag) {
+            const numEl = bracketCard.querySelector('.bracket-match-number');
+            if (numEl) {
+              liveTag = document.createElement('span');
+              liveTag.className = 'bracket-match-live-tag';
+              liveTag.textContent = 'LIVE';
+              numEl.appendChild(liveTag);
+            }
+          }
+        } else {
+          bracketCard.classList.remove('bracket-match-card--live');
+          const liveTag = bracketCard.querySelector('.bracket-match-live-tag');
+          if (liveTag) liveTag.remove();
+        }
+      }
+
       const card = document.querySelector(`.match-card[data-match-id="${m.id}"]`);
       if (!card) return;
 
