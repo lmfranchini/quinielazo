@@ -347,6 +347,11 @@ function updateMatches(matches) {
       console.error(`Error updating match ${m.id}:`, err);
     }
   });
+
+  // Redibujar las líneas del bracket si existe la función (Fase Final)
+  if (typeof window.drawBracketLines === 'function') {
+    window.drawBracketLines();
+  }
 }
 
 function updateLeaderboard(leaderboard) {

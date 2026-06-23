@@ -4,8 +4,8 @@ $user = requireLogin();
 
 $db = getDB();
 
-// Obtener todos los partidos ordenados por fecha
-$matches = $db->query("SELECT * FROM `Match` ORDER BY date ASC")->fetchAll();
+// Obtener todos los partidos ordenados por fecha (solo Fase de Grupos)
+$matches = $db->query("SELECT * FROM `Match` WHERE id < 148 ORDER BY date ASC")->fetchAll();
 
 // Obtener pronósticos del usuario actual
 $predStmt = $db->prepare("SELECT * FROM `Prediction` WHERE userId = ?");

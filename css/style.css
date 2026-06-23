@@ -2015,6 +2015,7 @@ input:disabled + .switch-slider {
 }
 
 .bracket-container {
+  position: relative;
   display: flex;
   justify-content: space-between;
   gap: 1.5rem;

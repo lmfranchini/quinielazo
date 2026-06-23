@@ -438,6 +438,8 @@ function renderBracketMatch($matchId, $db) {
         <div class="glass-panel" style="padding: 1.5rem 1rem;">
           <div class="bracket-wrapper">
             <div class="bracket-container">
+              <!-- SVG para dibujar las líneas de conexión -->
+              <svg id="bracket-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;"></svg>
               
               <!-- Columna 1: 16vos Izquierda (8 partidos) -->
               <div class="bracket-column active" data-rounds="16vos">
@@ -662,6 +664,213 @@ function renderBracketMatch($matchId, $db) {
     // Variable global para que app.js sepa si hay partidos en vivo
     window.HAS_LIVE = <?= $hasLive ? 'true' : 'false' ?>;
 
+    // Conexiones de partidos en el árbol (quién alimenta a quién)
+    const bracketConnections = [
+      // Izquierda: 16vos -> 8vos
+      { parentA: 148, parentB: 150, child: 164, side: 'left' },
+      { parentA: 149, parentB: 153, child: 165, side: 'left' },
+      { parentA: 159, parentB: 158, child: 168, side: 'left' },
+      { parentA: 157, parentB: 156, child: 169, side: 'left' },
+
+      // Izquierda: 8vos -> Cuartos
+      { parentA: 164, parentB: 165, child: 172, side: 'left' },
+      { parentA: 168, parentB: 169, child: 173, side: 'left' },
+
+      // Izquierda: Cuartos -> Semis
+      { parentA: 172, parentB: 173, child: 176, side: 'left' },
+
+      // Izquierda: Semis -> Final
+      { parentA: 176, child: 179, side: 'left-final' },
+
+      // Derecha: 16vos -> 8vos
+      { parentA: 151, parentB: 152, child: 166, side: 'right' },
+      { parentA: 154, parentB: 155, child: 167, side: 'right' },
+      { parentA: 163, parentB: 162, child: 170, side: 'right' },
+      { parentA: 160, parentB: 161, child: 171, side: 'right' },
+
+      // Derecha: 8vos -> Cuartos
+      { parentA: 166, parentB: 167, child: 174, side: 'right' },
+      { parentA: 170, parentB: 171, child: 175, side: 'right' },
+
+      // Derecha: Cuartos -> Semis
+      { parentA: 174, parentB: 175, child: 177, side: 'right' },
+
+      // Derecha: Semis -> Final
+      { parentA: 177, child: 179, side: 'right-final' }
+    ];
+
+    // Verifica si la ruta entre un partido padre y su hijo está activa (es decir, el ganador del padre está en el hijo)
+    function isPathActive(parentCard, childCard) {
+      const winnerRow = parentCard.querySelector('.winner-row');
+      if (!winnerRow) return false;
+      
+      const winnerNameEl = winnerRow.querySelector('.bracket-team-name');
+      if (!winnerNameEl) return false;
+      
+      const winnerName = winnerNameEl.textContent.trim().toLowerCase();
+      if (!winnerName || winnerName.includes('ganador') || winnerName.includes('perdedor') || winnerName.includes('3a') || winnerName.includes('3b')) {
+        return false;
+      }
+      
+      const childTeamNames = Array.from(childCard.querySelectorAll('.bracket-team-name'))
+        .map(el => el.textContent.trim().toLowerCase());
+        
+      return childTeamNames.includes(winnerName);
+    }
+
+    // Dibuja una bifurcación ortogonal entre dos padres y un hijo
+    function drawOrthogonalBranch(svg, xA, yA, xB, yB, xC, yC, midX, activeA, activeB) {
+      const pathA = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      pathA.setAttribute('d', `M ${xA} ${yA} H ${midX} V ${yC} H ${xC}`);
+      pathA.setAttribute('fill', 'none');
+      if (activeA) {
+        pathA.setAttribute('stroke', 'var(--accent-color)');
+        pathA.setAttribute('stroke-width', '3');
+        pathA.setAttribute('style', 'filter: drop-shadow(0 0 5px var(--accent-color));');
+        pathA.setAttribute('stroke-linecap', 'round');
+        pathA.setAttribute('stroke-linejoin', 'round');
+      } else {
+        pathA.setAttribute('stroke', 'rgba(255, 255, 255, 0.12)');
+        pathA.setAttribute('stroke-width', '2');
+        pathA.setAttribute('stroke-linecap', 'round');
+        pathA.setAttribute('stroke-linejoin', 'round');
+      }
+      
+      const pathB = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      pathB.setAttribute('d', `M ${xB} ${yB} H ${midX} V ${yC} H ${xC}`);
+      pathB.setAttribute('fill', 'none');
+      if (activeB) {
+        pathB.setAttribute('stroke', 'var(--accent-color)');
+        pathB.setAttribute('stroke-width', '3');
+        pathB.setAttribute('style', 'filter: drop-shadow(0 0 5px var(--accent-color));');
+        pathB.setAttribute('stroke-linecap', 'round');
+        pathB.setAttribute('stroke-linejoin', 'round');
+      } else {
+        pathB.setAttribute('stroke', 'rgba(255, 255, 255, 0.12)');
+        pathB.setAttribute('stroke-width', '2');
+        pathB.setAttribute('stroke-linecap', 'round');
+        pathB.setAttribute('stroke-linejoin', 'round');
+      }
+
+      // Añadir la inactiva primero para que la activa quede arriba
+      if (!activeA && !activeB) {
+        svg.appendChild(pathA);
+        svg.appendChild(pathB);
+      } else if (activeA) {
+        svg.appendChild(pathB);
+        svg.appendChild(pathA);
+      } else {
+        svg.appendChild(pathA);
+        svg.appendChild(pathB);
+      }
+    }
+
+    // Dibuja una línea única (Semifinal a Final)
+    function drawSingleLine(svg, xA, yA, xC, yC, midX, active) {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${xA} ${yA} H ${midX} V ${yC} H ${xC}`);
+      path.setAttribute('fill', 'none');
+      if (active) {
+        path.setAttribute('stroke', 'var(--accent-color)');
+        path.setAttribute('stroke-width', '3');
+        path.setAttribute('style', 'filter: drop-shadow(0 0 5px var(--accent-color));');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+      } else {
+        path.setAttribute('stroke', 'rgba(255, 255, 255, 0.12)');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+      }
+      svg.appendChild(path);
+    }
+
+    // Dibuja todas las líneas de conexión basadas en la geometría actual
+    function drawBracketLines() {
+      const svg = document.getElementById('bracket-svg');
+      if (!svg) return;
+      
+      svg.innerHTML = '';
+      
+      // Ocultar líneas en móvil para evitar desalineación (las columnas se apilan)
+      if (window.innerWidth <= 1000) {
+        return;
+      }
+      
+      const container = document.querySelector('.bracket-container');
+      if (!container || container.offsetWidth === 0) return;
+      
+      const containerRect = container.getBoundingClientRect();
+      
+      bracketConnections.forEach(conn => {
+        const cardC = document.querySelector(`.bracket-match-card[data-match-id="${conn.child}"]`);
+        if (!cardC) return;
+        const rectC = cardC.getBoundingClientRect();
+        
+        if (conn.parentB) {
+          const cardA = document.querySelector(`.bracket-match-card[data-match-id="${conn.parentA}"]`);
+          const cardB = document.querySelector(`.bracket-match-card[data-match-id="${conn.parentB}"]`);
+          if (!cardA || !cardB) return;
+          
+          const rectA = cardA.getBoundingClientRect();
+          const rectB = cardB.getBoundingClientRect();
+          
+          let xA, yA, xB, yB, xC, yC;
+          
+          if (conn.side === 'left') {
+            xA = rectA.right - containerRect.left;
+            yA = rectA.top + rectA.height / 2 - containerRect.top;
+            xB = rectB.right - containerRect.left;
+            yB = rectB.top + rectB.height / 2 - containerRect.top;
+            xC = rectC.left - containerRect.left;
+            yC = rectC.top + rectC.height / 2 - containerRect.top;
+          } else {
+            xA = rectA.left - containerRect.left;
+            yA = rectA.top + rectA.height / 2 - containerRect.top;
+            xB = rectB.left - containerRect.left;
+            yB = rectB.top + rectB.height / 2 - containerRect.top;
+            xC = rectC.right - containerRect.left;
+            yC = rectC.top + rectC.height / 2 - containerRect.top;
+          }
+          
+          const midX = (xA + xC) / 2;
+          const activeA = isPathActive(cardA, cardC);
+          const activeB = isPathActive(cardB, cardC);
+          
+          drawOrthogonalBranch(svg, xA, yA, xB, yB, xC, yC, midX, activeA, activeB);
+        } else {
+          const cardA = document.querySelector(`.bracket-match-card[data-match-id="${conn.parentA}"]`);
+          if (!cardA) return;
+          
+          const rectA = cardA.getBoundingClientRect();
+          
+          let xA, yA, xC, yC;
+          
+          if (conn.side === 'left-final') {
+            xA = rectA.right - containerRect.left;
+            yA = rectA.top + rectA.height / 2 - containerRect.top;
+            xC = rectC.left - containerRect.left;
+            // Desplazar levemente el puerto de entrada izquierdo en la final
+            yC = rectC.top + rectC.height * 0.35 - containerRect.top;
+          } else {
+            xA = rectA.left - containerRect.left;
+            yA = rectA.top + rectA.height / 2 - containerRect.top;
+            xC = rectC.right - containerRect.left;
+            // Desplazar levemente el puerto de entrada derecho en la final
+            yC = rectC.top + rectC.height * 0.65 - containerRect.top;
+          }
+          
+          const midX = (xA + xC) / 2;
+          const active = isPathActive(cardA, cardC);
+          
+          drawSingleLine(svg, xA, yA, xC, yC, midX, active);
+        }
+      });
+    }
+
+    // Exportar para acceso global
+    window.drawBracketLines = drawBracketLines;
+
     // Función para cambiar de pestañas principales (Pronósticos vs Árbol)
     function switchFfTab(tabName) {
       document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -674,6 +883,9 @@ function renderBracketMatch($matchId, $db) {
           pane.style.display = 'none';
         }
       });
+      if (tabName === 'bracket') {
+        setTimeout(drawBracketLines, 100);
+      }
     }
 
     // Cambiar de rondas en el Árbol de Encuentros (móviles)
@@ -690,6 +902,20 @@ function renderBracketMatch($matchId, $db) {
         }
       });
     }
+
+    // Redibujar al cambiar el tamaño de ventana o cargar
+    window.addEventListener('resize', () => {
+      if (document.getElementById('tab-bracket').style.display !== 'none') {
+        drawBracketLines();
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Si por alguna razón la pestaña inicial de bracket estuviera activa
+      if (document.getElementById('tab-bracket').style.display !== 'none') {
+        setTimeout(drawBracketLines, 300);
+      }
+    });
   </script>
   <script src="js/app.js?v=3.32"></script>
 </body>
