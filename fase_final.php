@@ -92,6 +92,45 @@ foreach ($leaderboard as $u) {
 }
 $totalPrizePool = $paidCount * 500;
 
+// Obtener todos los partidos en vivo para el leaderboard lateral
+$allDbMatches = $db->query("SELECT * FROM `Match`")->fetchAll();
+$liveMatches = [];
+foreach ($allDbMatches as $m) {
+    if ($m['status'] === 'LIVE' || $m['status'] === 'HALFTIME') {
+        $liveMatches[$m['id']] = [
+            'id'    => (int)$m['id'],
+            'teamA' => $m['teamA'],
+            'teamB' => $m['teamB'],
+            'flagA' => getFlagUrl($m['teamA']),
+            'flagB' => getFlagUrl($m['teamB']),
+        ];
+    }
+}
+
+$livePredsByUser = [];
+foreach ($allUsers as $u) {
+    $uid = (int)$u['id'];
+    $livePredsByUser[$uid] = [];
+    foreach ($liveMatches as $mid => $lm) {
+        $pred = null;
+        foreach ($allPreds as $ap) {
+            if ((int)$ap['userId'] === $uid && (int)$ap['matchId'] === $mid) {
+                $pred = $ap;
+                break;
+            }
+        }
+        $livePredsByUser[$uid][] = [
+            'matchId' => $mid,
+            'teamA'   => $lm['teamA'],
+            'teamB'   => $lm['teamB'],
+            'flagA'   => $lm['flagA'],
+            'flagB'   => $lm['flagB'],
+            'scoreA'  => $pred ? (int)$pred['predA'] : null,
+            'scoreB'  => $pred ? (int)$pred['predB'] : null,
+        ];
+    }
+}
+
 // Función auxiliar para renderizar los partidos en el árbol visual
 function renderBracketMatch($matchId, $db) {
     $stmt = $db->prepare("SELECT * FROM `Match` WHERE id = ?");
@@ -134,8 +173,8 @@ function renderBracketMatch($matchId, $db) {
     
     $clickAttr = $hasStarted ? 'onclick="openMatchDetails(' . $matchId . ')"' : '';
     
-    $teamNameRenderA = ($teamA === $m['teamA']) ? '<span class="bracket-placeholder-team">' . htmlspecialchars($teamA) . '</span>' : htmlspecialchars($teamA);
-    $teamNameRenderB = ($teamB === $m['teamB']) ? '<span class="bracket-placeholder-team">' . htmlspecialchars($teamB) . '</span>' : htmlspecialchars($teamB);
+    $teamNameRenderA = isPlaceholderTeam($teamA) ? '<span class="bracket-placeholder-team">' . htmlspecialchars($teamA) . '</span>' : htmlspecialchars($teamA);
+    $teamNameRenderB = isPlaceholderTeam($teamB) ? '<span class="bracket-placeholder-team">' . htmlspecialchars($teamB) . '</span>' : htmlspecialchars($teamB);
     
     $flagRenderA = $flagA ? '<img src="' . $flagA . '" class="bracket-team-flag" />' : '<div class="bracket-team-flag-placeholder"></div>';
     $flagRenderB = $flagB ? '<img src="' . $flagB . '" class="bracket-team-flag" />' : '<div class="bracket-team-flag-placeholder"></div>';
@@ -289,7 +328,7 @@ function renderBracketMatch($matchId, $db) {
                           <?php endif; ?>
                           <div class="team-name">
                             <span>
-                              <?php if ($teamA === $match['teamA']): ?>
+                              <?php if (isPlaceholderTeam($teamA)): ?>
                                 <span class="bracket-placeholder-team"><?= htmlspecialchars($teamA) ?></span>
                               <?php else: ?>
                                 <?= htmlspecialchars($teamA) ?>
@@ -328,7 +367,7 @@ function renderBracketMatch($matchId, $db) {
                           <?php endif; ?>
                           <div class="team-name">
                             <span>
-                              <?php if ($teamB === $match['teamB']): ?>
+                              <?php if (isPlaceholderTeam($teamB)): ?>
                                 <span class="bracket-placeholder-team"><?= htmlspecialchars($teamB) ?></span>
                               <?php else: ?>
                                 <?= htmlspecialchars($teamB) ?>
@@ -547,42 +586,78 @@ function renderBracketMatch($matchId, $db) {
 
     <!-- Barra Lateral: Leaderboard -->
     <aside>
-      <div class="glass-panel" style="margin-bottom: 2rem; border-color: rgba(255, 0, 85, 0.2);">
-        <h3 style="margin-top:0; font-size:1.15rem; font-weight:800; letter-spacing:0.5px; display:flex; align-items:center; gap:0.5rem; color:var(--fifa-magenta)">
-          💰 BOLSA ACUMULADA
-        </h3>
-        <div style="font-size: 2.2rem; font-weight: 900; color: white; text-shadow: 0 0 15px rgba(255, 0, 85, 0.4); margin: 0.5rem 0;">
-          $<?= number_format($totalPrizePool, 0) ?> MXN
+      <!-- Card Bolsa Acumulada -->
+      <div class="glass-panel prize-pool-card" style="margin-bottom: 1.5rem; padding: 1.2rem; border-color: rgba(255, 215, 0, 0.25); background: linear-gradient(135deg, rgba(20, 25, 35, 0.95), rgba(255, 215, 0, 0.03));">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div style="font-size: 2.2rem; line-height: 1; filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3));">💰</div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Bolsa Acumulada</div>
+            <div style="font-size: 1.6rem; font-weight: 900; color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.2);" id="prize-pool-amount">
+              $<?= number_format($totalPrizePool) ?> MXN
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-secondary);" id="prize-pool-participants">
+              <?= $paidCount ?> <?= $paidCount === 1 ? 'participante' : 'participantes' ?> de $500 pesos
+            </div>
+          </div>
         </div>
-        <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; margin: 0;">
-          Entradas confirmadas: <strong><?= $paidCount ?></strong> de $500 c/u.
-        </p>
       </div>
 
       <h2 class="section-title">🏆 Clasificación General</h2>
-      <div class="leaderboard">
-        <?php foreach ($leaderboard as $idx => $player): 
-          $rank = $idx + 1;
-          $rowClass = ($rank == 1) ? 'top-1' : (($rank == 2) ? 'top-2' : (($rank == 3) ? 'top-3' : ''));
-          $isSelf = ($player['id'] == $user['id']);
-          $displayName = htmlspecialchars($player['username']);
-          if ($isSelf) $displayName .= ' <span style="color:var(--fifa-cyan); font-weight:800">(Tú)</span>';
-          if (!empty($player['hasPaid'])) {
-              $displayName .= ' <span class="paid-marker" title="Entrada pagada">$</span>';
-          }
-        ?>
-          <div class="leaderboard-row <?= $rowClass ?> <?= $isSelf ? 'leaderboard-row--self' : '' ?>">
-            <span class="lb-rank">#<?= $rank ?></span>
-            <span class="lb-name"><?= $displayName ?></span>
-            <div class="lb-score-block">
-              <span class="lb-points" id="lb-pts-<?= $player['id'] ?>"><?= $player['total'] ?></span>
-              <div class="lb-pts-label">
-                <span id="lb-conf-<?= $player['id'] ?>"><?= $player['confirmed'] ?></span> conf + 
-                <span id="lb-proj-<?= $player['id'] ?>"><?= $player['projected'] ?></span> proj
+      <div class="leaderboard" id="leaderboard">
+        <?php $medals = ['🥇']; ?>
+        <?php foreach ($leaderboard as $i => $u): ?>
+          <div class="leaderboard-row <?= $i < 3 ? 'top-'.($i+1) : '' ?>">
+            <div class="lb-rank"><?= $medals[$i] ?? ($i + 1) ?></div>
+            <div class="lb-name">
+              <div>
+                <?= htmlspecialchars($u['username']) ?>
+                <?php if (!empty($u['hasPaid'])): ?>
+                  <span class="paid-indicator" title="Participa por la bolsa de premios">$</span>
+                <?php endif; ?>
+                <?php if ((int)$u['id'] === (int)$user['id']): ?>
+                  <span style="font-size:0.7rem; color:var(--accent-color)"> (tú)</span>
+                <?php endif; ?>
               </div>
+              <?php 
+              $uLivePreds = $livePredsByUser[(int)$u['id']] ?? [];
+              if (!empty($uLivePreds)):
+              ?>
+                <div class="lb-live-preds" style="font-size: 0.72rem; color: var(--text-secondary); display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.35rem; width: 100%;">
+                  <span style="font-size: 0.62rem; text-transform: uppercase; color: var(--fifa-cyan); font-weight: 800; letter-spacing: 0.5px; opacity: 0.85;">En vivo:</span>
+                  <?php foreach ($uLivePreds as $lp): ?>
+                    <span style="display: inline-flex; align-items: center; gap: 0.2rem; background: rgba(255,255,255,0.04); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.03);" title="<?= htmlspecialchars($lp['teamA']) ?> vs <?= htmlspecialchars($lp['teamB']) ?>">
+                      <?php if ($lp['flagA']): ?>
+                        <img src="<?= $lp['flagA'] ?>" alt="<?= htmlspecialchars($lp['teamA']) ?>" style="width: 13px; height: auto; border-radius: 1px; display: block;" />
+                      <?php endif; ?>
+                      <?php if ($lp['scoreA'] !== null && $lp['scoreB'] !== null): ?>
+                        <strong style="color: white; font-size: 0.72rem; font-family: 'Inter', sans-serif;">
+                          <?= $lp['scoreA'] ?>-<?= $lp['scoreB'] ?>
+                        </strong>
+                      <?php else: ?>
+                        <span style="color: var(--text-secondary); font-size: 0.65rem; font-weight: 600; font-family: 'Inter', sans-serif;">Sin pronóstico</span>
+                      <?php endif; ?>
+                      <?php if ($lp['flagB']): ?>
+                        <img src="<?= $lp['flagB'] ?>" alt="<?= htmlspecialchars($lp['teamB']) ?>" style="width: 13px; height: auto; border-radius: 1px; display: block;" />
+                      <?php endif; ?>
+                    </span>
+                  <?php endforeach; ?>
+                </div>
+              <?php endif; ?>
+            </div>
+            <div class="lb-score-block">
+              <div class="lb-points"><?= $u['total'] ?></div>
+              <div class="lb-pts-label">pts</div>
+              <?php if ($u['projected'] > 0): ?>
+                <div class="lb-projected">+<?= $u['projected'] ?> en vivo</div>
+              <?php endif; ?>
             </div>
           </div>
         <?php endforeach; ?>
+        <?php if (empty($leaderboard)): ?>
+          <div style="padding:2rem; text-align:center; color:var(--text-secondary)">
+            Aún no hay participantes
+          </div>
+        <?php endif; ?>
       </div>
     </aside>
 
