@@ -2228,34 +2228,6 @@ input:disabled + .switch-slider {
   box-shadow: 0 4px 12px rgba(255, 0, 85, 0.25);
 }
 
-@media (max-width: 1000px) {
-  .round-selector-tabs {
-    display: flex;
-  }
-  
-  .bracket-container {
-    min-width: unset;
-    gap: 0;
-    padding: 0.5rem 0;
-  }
-  
-  .bracket-column {
-    display: none;
-    width: 100%;
-    min-width: 100%;
-    height: auto;
-    padding: 0 0.5rem;
-    gap: 1rem;
-    justify-content: flex-start;
-  }
-  
-  .bracket-column.active {
-    display: flex;
-  }
-  
-  .bracket-column-center {
-    gap: 1.5rem;
-  }
-}
+/* El árbol se mantiene en vista PC siempre para permitir zoom/scroll manual */
 
 

@@ -3,15 +3,15 @@ require_once 'config.php';
 $user = requireLogin();
 $db = getDB();
 
-// Obtener todos los partidos de la Fase Final (IDs 148 a 179)
-$matchesQuery = $db->query("SELECT * FROM `Match` WHERE id >= 148 ORDER BY id ASC")->fetchAll();
+// Obtener todos los partidos de la Fase Final (IDs 73 a 104)
+$matchesQuery = $db->query("SELECT * FROM `Match` WHERE id >= 73 ORDER BY id ASC")->fetchAll();
 $ffMatches = [];
 foreach ($matchesQuery as $m) {
     $ffMatches[$m['id']] = $m;
 }
 
 // Obtener pronósticos del usuario actual para la Fase Final
-$predStmt = $db->prepare("SELECT * FROM `Prediction` WHERE userId = ? AND matchId >= 148");
+$predStmt = $db->prepare("SELECT * FROM `Prediction` WHERE userId = ? AND matchId >= 73");
 $predStmt->execute([$user['id']]);
 $predictions = $predStmt->fetchAll();
 $predMap = [];
@@ -65,12 +65,12 @@ $hasLive = false;
 
 foreach ($matchesQuery as $m) {
     $id = (int)$m['id'];
-    if ($id >= 148 && $id <= 163) $dieciseisavos[] = $m;
-    elseif ($id >= 164 && $id <= 171) $octavos[] = $m;
-    elseif ($id >= 172 && $id <= 175) $cuartos[] = $m;
-    elseif ($id >= 176 && $id <= 177) $semis[] = $m;
-    elseif ($id === 178) $tercerLugar[] = $m;
-    elseif ($id === 179) $finalMatch[] = $m;
+    if ($id >= 73 && $id <= 88) $dieciseisavos[] = $m;
+    elseif ($id >= 89 && $id <= 96) $octavos[] = $m;
+    elseif ($id >= 97 && $id <= 100) $cuartos[] = $m;
+    elseif ($id >= 101 && $id <= 102) $semis[] = $m;
+    elseif ($id === 103) $tercerLugar[] = $m;
+    elseif ($id === 104) $finalMatch[] = $m;
     
     if (in_array($m['status'], ['LIVE', 'HALFTIME'])) $hasLive = true;
 }
@@ -444,49 +444,62 @@ function renderBracketMatch($matchId, $db) {
               <!-- Columna 1: 16vos Izquierda (8 partidos) -->
               <div class="bracket-column active" data-rounds="16vos">
                 <div class="bracket-round-title">16vos de Final (Izquierda)</div>
-                <?= renderBracketMatch(148, $db) ?>
-                <?= renderBracketMatch(150, $db) ?>
-                <?= renderBracketMatch(149, $db) ?>
-                <?= renderBracketMatch(153, $db) ?>
-                <?= renderBracketMatch(159, $db) ?>
-                <?= renderBracketMatch(158, $db) ?>
-                <?= renderBracketMatch(157, $db) ?>
-                <?= renderBracketMatch(156, $db) ?>
+                <?= renderBracketMatch(73, $db) ?>
+                <?= renderBracketMatch(75, $db) ?>
+                <?= renderBracketMatch(74, $db) ?>
+                <?= renderBracketMatch(78, $db) ?>
+                <?= renderBracketMatch(84, $db) ?>
+                <?= renderBracketMatch(83, $db) ?>
+                <?= renderBracketMatch(82, $db) ?>
+                <?= renderBracketMatch(81, $db) ?>
               </div>
 
               <!-- Columna 2: 8vos Izquierda (4 partidos) -->
               <div class="bracket-column" data-rounds="8vos">
                 <div class="bracket-round-title">8vos de Final</div>
-                <?= renderBracketMatch(164, $db) ?>
-                <?= renderBracketMatch(165, $db) ?>
-                <?= renderBracketMatch(168, $db) ?>
-                <?= renderBracketMatch(169, $db) ?>
+                <?= renderBracketMatch(89, $db) ?>
+                <?= renderBracketMatch(90, $db) ?>
+                <?= renderBracketMatch(93, $db) ?>
+                <?= renderBracketMatch(94, $db) ?>
               </div>
 
               <!-- Columna 3: Cuartos Izquierda (2 partidos) -->
               <div class="bracket-column" data-rounds="cuartos">
                 <div class="bracket-round-title">Cuartos de Final</div>
-                <?= renderBracketMatch(172, $db) ?>
-                <?= renderBracketMatch(173, $db) ?>
+                <?= renderBracketMatch(97, $db) ?>
+                <?= renderBracketMatch(98, $db) ?>
               </div>
 
               <!-- Columna 4: Semifinal Izquierda (1 partido) -->
               <div class="bracket-column" data-rounds="semis">
                 <div class="bracket-round-title">Semifinal</div>
-                <?= renderBracketMatch(176, $db) ?>
+                <?= renderBracketMatch(101, $db) ?>
               </div>
 
               <!-- Columna 5: Final y Tercer Lugar (Centro) -->
-              <div class="bracket-column bracket-column-center" data-rounds="final">
+              <div class="bracket-column bracket-column-center" data-rounds="final" style="position: relative;">
                 
-                <div class="bracket-center-section">
-                  <div class="bracket-round-title" style="border-bottom-color: var(--fifa-magenta);">🏆 Gran Final 🏆</div>
-                  <?= renderBracketMatch(179, $db) ?>
+                <!-- Logo superior como en la imagen -->
+                <div style="text-align: center; margin-bottom: 0.5rem; flex-shrink: 0;">
+                  <span style="font-family: 'Inter', sans-serif; font-size: 1.4rem; font-weight: 900; letter-spacing: 2px; color: var(--fifa-cyan); text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);">WE ARE 26</span>
+                  <div style="font-size: 0.65rem; color: var(--text-secondary); font-weight: 800; letter-spacing: 4px; margin-top: 0.2rem;">POSIBLES</div>
                 </div>
 
-                <div class="bracket-center-section">
+                <!-- Imagen del trofeo en el centro con resplandor -->
+                <div style="text-align: center; margin: 1rem 0; position: relative; flex-shrink: 0;">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/e/ec/FIFA_World_Cup_Trophy.png" 
+                       style="height: 180px; width: auto; filter: drop-shadow(0 0 15px rgba(255,215,0,0.3));" 
+                       alt="Copa del Mundo" />
+                </div>
+
+                <div class="bracket-center-section" style="flex-shrink: 0;">
+                  <div class="bracket-round-title" style="border-bottom-color: var(--fifa-magenta); font-weight: 900;">🏆 Gran Final 🏆</div>
+                  <?= renderBracketMatch(104, $db) ?>
+                </div>
+
+                <div class="bracket-center-section" style="margin-top: 1rem; flex-shrink: 0;">
                   <div class="bracket-sub-title-center">🥉 Tercer Lugar</div>
-                  <?= renderBracketMatch(178, $db) ?>
+                  <?= renderBracketMatch(103, $db) ?>
                 </div>
 
               </div>
@@ -494,36 +507,36 @@ function renderBracketMatch($matchId, $db) {
               <!-- Columna 6: Semifinal Derecha (1 partido) -->
               <div class="bracket-column" data-rounds="semis">
                 <div class="bracket-round-title">Semifinal</div>
-                <?= renderBracketMatch(177, $db) ?>
+                <?= renderBracketMatch(102, $db) ?>
               </div>
 
               <!-- Columna 7: Cuartos Derecha (2 partidos) -->
               <div class="bracket-column" data-rounds="cuartos">
                 <div class="bracket-round-title">Cuartos de Final</div>
-                <?= renderBracketMatch(174, $db) ?>
-                <?= renderBracketMatch(175, $db) ?>
+                <?= renderBracketMatch(99, $db) ?>
+                <?= renderBracketMatch(100, $db) ?>
               </div>
 
               <!-- Columna 8: 8vos Derecha (4 partidos) -->
               <div class="bracket-column" data-rounds="8vos">
                 <div class="bracket-round-title">8vos de Final</div>
-                <?= renderBracketMatch(166, $db) ?>
-                <?= renderBracketMatch(167, $db) ?>
-                <?= renderBracketMatch(170, $db) ?>
-                <?= renderBracketMatch(171, $db) ?>
+                <?= renderBracketMatch(91, $db) ?>
+                <?= renderBracketMatch(92, $db) ?>
+                <?= renderBracketMatch(95, $db) ?>
+                <?= renderBracketMatch(96, $db) ?>
               </div>
 
               <!-- Columna 9: 16vos Derecha (8 partidos) -->
               <div class="bracket-column active" data-rounds="16vos">
                 <div class="bracket-round-title">16vos de Final (Derecha)</div>
-                <?= renderBracketMatch(151, $db) ?>
-                <?= renderBracketMatch(152, $db) ?>
-                <?= renderBracketMatch(154, $db) ?>
-                <?= renderBracketMatch(155, $db) ?>
-                <?= renderBracketMatch(163, $db) ?>
-                <?= renderBracketMatch(162, $db) ?>
-                <?= renderBracketMatch(160, $db) ?>
-                <?= renderBracketMatch(161, $db) ?>
+                <?= renderBracketMatch(76, $db) ?>
+                <?= renderBracketMatch(77, $db) ?>
+                <?= renderBracketMatch(79, $db) ?>
+                <?= renderBracketMatch(80, $db) ?>
+                <?= renderBracketMatch(88, $db) ?>
+                <?= renderBracketMatch(87, $db) ?>
+                <?= renderBracketMatch(85, $db) ?>
+                <?= renderBracketMatch(86, $db) ?>
               </div>
 
             </div>
@@ -667,36 +680,36 @@ function renderBracketMatch($matchId, $db) {
     // Conexiones de partidos en el árbol (quién alimenta a quién)
     const bracketConnections = [
       // Izquierda: 16vos -> 8vos
-      { parentA: 148, parentB: 150, child: 164, side: 'left' },
-      { parentA: 149, parentB: 153, child: 165, side: 'left' },
-      { parentA: 159, parentB: 158, child: 168, side: 'left' },
-      { parentA: 157, parentB: 156, child: 169, side: 'left' },
+      { parentA: 73, parentB: 75, child: 89, side: 'left' },
+      { parentA: 74, parentB: 78, child: 90, side: 'left' },
+      { parentA: 84, parentB: 83, child: 93, side: 'left' },
+      { parentA: 82, parentB: 81, child: 94, side: 'left' },
 
       // Izquierda: 8vos -> Cuartos
-      { parentA: 164, parentB: 165, child: 172, side: 'left' },
-      { parentA: 168, parentB: 169, child: 173, side: 'left' },
+      { parentA: 89, parentB: 90, child: 97, side: 'left' },
+      { parentA: 93, parentB: 94, child: 98, side: 'left' },
 
       // Izquierda: Cuartos -> Semis
-      { parentA: 172, parentB: 173, child: 176, side: 'left' },
+      { parentA: 97, parentB: 98, child: 101, side: 'left' },
 
       // Izquierda: Semis -> Final
-      { parentA: 176, child: 179, side: 'left-final' },
+      { parentA: 101, child: 104, side: 'left-final' },
 
       // Derecha: 16vos -> 8vos
-      { parentA: 151, parentB: 152, child: 166, side: 'right' },
-      { parentA: 154, parentB: 155, child: 167, side: 'right' },
-      { parentA: 163, parentB: 162, child: 170, side: 'right' },
-      { parentA: 160, parentB: 161, child: 171, side: 'right' },
+      { parentA: 76, parentB: 77, child: 91, side: 'right' },
+      { parentA: 79, parentB: 80, child: 92, side: 'right' },
+      { parentA: 88, parentB: 87, child: 95, side: 'right' },
+      { parentA: 85, parentB: 86, child: 96, side: 'right' },
 
       // Derecha: 8vos -> Cuartos
-      { parentA: 166, parentB: 167, child: 174, side: 'right' },
-      { parentA: 170, parentB: 171, child: 175, side: 'right' },
+      { parentA: 91, parentB: 92, child: 99, side: 'right' },
+      { parentA: 95, parentB: 96, child: 100, side: 'right' },
 
       // Derecha: Cuartos -> Semis
-      { parentA: 174, parentB: 175, child: 177, side: 'right' },
+      { parentA: 99, parentB: 100, child: 102, side: 'right' },
 
       // Derecha: Semis -> Final
-      { parentA: 177, child: 179, side: 'right-final' }
+      { parentA: 102, child: 104, side: 'right-final' }
     ];
 
     // Verifica si la ruta entre un partido padre y su hijo está activa (es decir, el ganador del padre está en el hijo)
@@ -791,11 +804,6 @@ function renderBracketMatch($matchId, $db) {
       if (!svg) return;
       
       svg.innerHTML = '';
-      
-      // Ocultar líneas en móvil para evitar desalineación (las columnas se apilan)
-      if (window.innerWidth <= 1000) {
-        return;
-      }
       
       const container = document.querySelector('.bracket-container');
       if (!container || container.offsetWidth === 0) return;

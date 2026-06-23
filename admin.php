@@ -101,48 +101,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     try {
         $originalKnockoutPlaceholders = [
-            148 => ['teamA' => '2A', 'teamB' => '2B'],
-            149 => ['teamA' => '1E', 'teamB' => '3A/B/C/D/F'],
-            150 => ['teamA' => '1F', 'teamB' => '2C'],
-            151 => ['teamA' => '1C', 'teamB' => '2F'],
-            152 => ['teamA' => '1I', 'teamB' => '3C/D/F/G/H'],
-            153 => ['teamA' => '2E', 'teamB' => '2I'],
-            154 => ['teamA' => '1A', 'teamB' => '3C/E/F/H/I'],
-            155 => ['teamA' => '1L', 'teamB' => '3E/H/I/J/K'],
-            156 => ['teamA' => '1D', 'teamB' => '3B/E/F/I/J'],
-            157 => ['teamA' => '1G', 'teamB' => '3A/E/H/I/J'],
-            158 => ['teamA' => '2K', 'teamB' => '2L'],
-            159 => ['teamA' => '1H', 'teamB' => '2J'],
-            160 => ['teamA' => '1B', 'teamB' => '3E/F/G/I/J'],
-            161 => ['teamA' => '1J', 'teamB' => '2H'],
-            162 => ['teamA' => '1K', 'teamB' => '3D/E/I/J/L'],
-            163 => ['teamA' => '2D', 'teamB' => '2G'],
+            73 => ['teamA' => '2A', 'teamB' => '2B'],
+            74 => ['teamA' => '1E', 'teamB' => '3A/B/C/D/F'],
+            75 => ['teamA' => '1F', 'teamB' => '2C'],
+            76 => ['teamA' => '1C', 'teamB' => '2F'],
+            77 => ['teamA' => '1I', 'teamB' => '3C/D/F/G/H'],
+            78 => ['teamA' => '2E', 'teamB' => '2I'],
+            79 => ['teamA' => '1A', 'teamB' => '3C/E/F/H/I'],
+            80 => ['teamA' => '1L', 'teamB' => '3E/H/I/J/K'],
+            81 => ['teamA' => '1D', 'teamB' => '3B/E/F/I/J'],
+            82 => ['teamA' => '1G', 'teamB' => '3A/E/H/I/J'],
+            83 => ['teamA' => '2K', 'teamB' => '2L'],
+            84 => ['teamA' => '1H', 'teamB' => '2J'],
+            85 => ['teamA' => '1B', 'teamB' => '3E/F/G/I/J'],
+            86 => ['teamA' => '1J', 'teamB' => '2H'],
+            87 => ['teamA' => '1K', 'teamB' => '3D/E/I/J/L'],
+            88 => ['teamA' => '2D', 'teamB' => '2G'],
             
             // R16
-            164 => ['teamA' => 'Ganador 148', 'teamB' => 'Ganador 150'],
-            165 => ['teamA' => 'Ganador 149', 'teamB' => 'Ganador 153'],
-            166 => ['teamA' => 'Ganador 151', 'teamB' => 'Ganador 152'],
-            167 => ['teamA' => 'Ganador 154', 'teamB' => 'Ganador 155'],
-            168 => ['teamA' => 'Ganador 159', 'teamB' => 'Ganador 158'],
-            169 => ['teamA' => 'Ganador 157', 'teamB' => 'Ganador 156'],
-            170 => ['teamA' => 'Ganador 163', 'teamB' => 'Ganador 162'],
-            171 => ['teamA' => 'Ganador 160', 'teamB' => 'Ganador 161'],
+            89 => ['teamA' => 'Ganador 73', 'teamB' => 'Ganador 75'],
+            90 => ['teamA' => 'Ganador 74', 'teamB' => 'Ganador 78'],
+            91 => ['teamA' => 'Ganador 76', 'teamB' => 'Ganador 77'],
+            92 => ['teamA' => 'Ganador 79', 'teamB' => 'Ganador 80'],
+            93 => ['teamA' => 'Ganador 84', 'teamB' => 'Ganador 83'],
+            94 => ['teamA' => 'Ganador 82', 'teamB' => 'Ganador 81'],
+            95 => ['teamA' => 'Ganador 88', 'teamB' => 'Ganador 87'],
+            96 => ['teamA' => 'Ganador 85', 'teamB' => 'Ganador 86'],
             
             // QF
-            172 => ['teamA' => 'Ganador 164', 'teamB' => 'Ganador 165'],
-            173 => ['teamA' => 'Ganador 168', 'teamB' => 'Ganador 169'],
-            174 => ['teamA' => 'Ganador 166', 'teamB' => 'Ganador 167'],
-            175 => ['teamA' => 'Ganador 170', 'teamB' => 'Ganador 171'],
+            97 => ['teamA' => 'Ganador 89', 'teamB' => 'Ganador 90'],
+            98 => ['teamA' => 'Ganador 93', 'teamB' => 'Ganador 94'],
+            99 => ['teamA' => 'Ganador 91', 'teamB' => 'Ganador 92'],
+            100 => ['teamA' => 'Ganador 95', 'teamB' => 'Ganador 96'],
             
             // SF
-            176 => ['teamA' => 'Ganador 172', 'teamB' => 'Ganador 173'],
-            177 => ['teamA' => 'Ganador 174', 'teamB' => 'Ganador 175'],
+            101 => ['teamA' => 'Ganador 97', 'teamB' => 'Ganador 98'],
+            102 => ['teamA' => 'Ganador 99', 'teamB' => 'Ganador 100'],
             
             // 3rd Place
-            178 => ['teamA' => 'Perdedor 176', 'teamB' => 'Perdedor 177'],
+            103 => ['teamA' => 'Perdedor 101', 'teamB' => 'Perdedor 102'],
             
             // Final
-            179 => ['teamA' => 'Ganador 176', 'teamB' => 'Ganador 177']
+            104 => ['teamA' => 'Ganador 101', 'teamB' => 'Ganador 102']
         ];
 
         $standings = getGroupStandings($db);
@@ -173,14 +173,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $qualifiedThirds = array_slice($thirdPlaces, 0, 8);
 
         $slots = [
-            149 => ['groups' => ['A', 'B', 'C', 'D', 'F']],
-            152 => ['groups' => ['C', 'D', 'F', 'G', 'H']],
-            154 => ['groups' => ['C', 'E', 'F', 'H', 'I']],
-            155 => ['groups' => ['E', 'H', 'I', 'J', 'K']],
-            156 => ['groups' => ['B', 'E', 'F', 'I', 'J']],
-            157 => ['groups' => ['A', 'E', 'H', 'I', 'J']],
-            160 => ['groups' => ['E', 'F', 'G', 'I', 'J']],
-            162 => ['groups' => ['D', 'E', 'I', 'J', 'L']],
+            74 => ['groups' => ['A', 'B', 'C', 'D', 'F']],
+            77 => ['groups' => ['C', 'D', 'F', 'G', 'H']],
+            79 => ['groups' => ['C', 'E', 'F', 'H', 'I']],
+            80 => ['groups' => ['E', 'H', 'I', 'J', 'K']],
+            81 => ['groups' => ['B', 'E', 'F', 'I', 'J']],
+            82 => ['groups' => ['A', 'E', 'H', 'I', 'J']],
+            85 => ['groups' => ['E', 'F', 'G', 'I', 'J']],
+            87 => ['groups' => ['D', 'E', 'I', 'J', 'L']],
         ];
         $assignedThirds = assignThirdPlaces($qualifiedThirds, $slots);
 
@@ -205,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // Obtener partidos de fase de grupos únicamente
-$matches = $db->query("SELECT * FROM `Match` WHERE id < 148 ORDER BY date ASC")->fetchAll();
+$matches = $db->query("SELECT * FROM `Match` WHERE id < 73 ORDER BY date ASC")->fetchAll();
 // Obtener usuarios ordenados
 $users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role != 'ADMIN' ORDER BY username ASC")->fetchAll();
 ?>
@@ -322,7 +322,7 @@ $users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role
         </p>
         <div class="admin-match-list">
           <?php 
-          $ffMatchesForAdmin = $db->query("SELECT * FROM `Match` WHERE id >= 148 ORDER BY id ASC")->fetchAll();
+          $ffMatchesForAdmin = $db->query("SELECT * FROM `Match` WHERE id >= 73 ORDER BY id ASC")->fetchAll();
           $hasAnyFf = false;
           foreach ($ffMatchesForAdmin as $m):
             $hasAnyFf = true;
@@ -476,7 +476,7 @@ $users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role
         }
 
         let winner = '';
-        if (matchId >= 148 && parseInt(scoreA) === parseInt(scoreB)) {
+        if (matchId >= 73 && parseInt(scoreA) === parseInt(scoreB)) {
           const container = document.querySelector(`.winner-selector-container-${matchId}`);
           const select = document.querySelector(`.admin-winner-select-${matchId}`);
           
@@ -542,7 +542,7 @@ $users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role
         const btn = item.querySelector('.btn-set-result');
         if (!btn) return;
         const matchId = parseInt(btn.dataset.matchId);
-        if (matchId < 148) return;
+        if (matchId < 73) return;
         
         const scoreAVal = item.querySelector(`.result-a-${matchId}`).value;
         const scoreBVal = item.querySelector(`.result-b-${matchId}`).value;
