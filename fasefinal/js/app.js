@@ -338,8 +338,7 @@ function updateMatches(matches) {
       const isLive = (m.status === 'LIVE' || m.status === 'HALFTIME' || m.status === 'IN_PLAY' || m.status === '1T' || m.status === '2T' || m.status === 'HT' || m.status === '90+');
       
       if (isLive) {
-        const minute = parseInt(m.matchMinute) || 0;
-        const interval = minute >= 85 ? 60000 : 180000;
+        const interval = 300000; // 5 minutos constante
         const lastFetch = lastLiveForecastFetch[m.id] || 0;
         
         if (Date.now() - lastFetch >= interval) {
