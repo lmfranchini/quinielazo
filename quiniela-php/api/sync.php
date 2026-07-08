@@ -220,6 +220,13 @@ foreach ($allEvents as $event) {
     if ($isFinished && !$dbMatch['isFinished'] && $scoreHome !== null && $scoreAway !== null) {
         logMsg('   → Calculando puntos definitivos...');
         calculateMatchPoints($db, $dbMatch['id'], intval($scoreHome), intval($scoreAway));
+        logMsg('   → Resolviendo clasificados de fases finales automáticamente...');
+        try {
+            resolveAndSaveAllPlaceholders($db);
+            logMsg('   → Clasificados actualizados con éxito.');
+        } catch (Exception $eResolve) {
+            logMsg('   ⚠️ Error al actualizar clasificados: ' . $eResolve->getMessage());
+        }
     }
 }
 
