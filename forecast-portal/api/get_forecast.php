@@ -39,9 +39,25 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $matchId = isset($_GET['match_id']) ? (int)$_GET['match_id'] : 0;
-if ($matchId <= 0) {
+if ($matchId <= 0 || $matchId === 2147483647) {
     echo json_encode(['error' => 'ID de partido inválido']);
     exit;
+}
+
+try {
+    $db = getDB();
+    $stmtCheck = $db->prepare("SELECT id FROM `Match` WHERE id = ?");
+    $stmtCheck->execute([$matchId]);
+    if (!$stmtCheck->fetch()) {
+        echo json_encode(['error' => 'Partido no encontrado']);
+        exit;
+    }
+} catch (Exception $eCheck) {
+    // Si falla la BD, continuamos pero bloqueamos IDs extrañamente altos como medida de seguridad
+    if ($matchId > 1000) {
+        echo json_encode(['error' => 'ID de partido fuera de rango']);
+        exit;
+    }
 }
 
 $url = FORECAST_SERVICE_URL . "/forecast/match/" . $matchId;
