@@ -53,8 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
     populateHalftimeShow(el, false);
   });
 
-  // Auto-scroll a la fecha actual (scroll-target)
-  if (!window.location.hash) {
+  // Manejo de tab por URL o auto-scroll
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get('tab');
+  if (tabParam && typeof switchTab === 'function') {
+    switchTab(tabParam);
+  } else if (tabParam && typeof switchFfTab === 'function') {
+    switchFfTab(tabParam);
+  } else if (!window.location.hash) {
     const scrollTarget = document.getElementById('scroll-target');
     if (scrollTarget) {
       setTimeout(() => {
@@ -66,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Sistema de actualización en vivo ──
 let pollInterval = null;
+let lastLiveForecastFetch = {};
 let pollSpeed = 30000; // 30 segundos por defecto
 
 function initLivePolling() {
@@ -76,8 +83,8 @@ function initLivePolling() {
     pollSpeed = 60000; // 60 segundos cuando no hay en vivo
   }
 
-  // Primera consulta después de 5 segundos
-  setTimeout(fetchLiveData, 5000);
+  // Primera consulta después de 500ms para carga inmediata
+  setTimeout(fetchLiveData, 500);
   pollInterval = setInterval(fetchLiveData, pollSpeed);
 }
 
@@ -155,8 +162,11 @@ function updateMatches(matches) {
         const bScoreAEl = bracketCard.querySelector(`#scoreA-${m.id}`);
         const bScoreBEl = bracketCard.querySelector(`#scoreB-${m.id}`);
         if (bScoreAEl && bScoreBEl) {
-          const newA = m.scoreA !== null ? m.scoreA : '–';
-          const newB = m.scoreB !== null ? m.scoreB : '–';
+          let newA = m.scoreA !== null ? m.scoreA : '–';
+          if (m.shootoutA != null) newA = `(${m.shootoutA}) ${newA}`;
+          
+          let newB = m.scoreB !== null ? m.scoreB : '–';
+          if (m.shootoutB != null) newB = `(${m.shootoutB}) ${newB}`;
           if (bScoreAEl.textContent !== String(newA)) {
             bScoreAEl.textContent = newA;
           }
@@ -164,6 +174,17 @@ function updateMatches(matches) {
             bScoreBEl.textContent = newB;
           }
         }
+        
+        // Actualizar nombres y banderas en el árbol (bracket)
+        const rows = bracketCard.querySelectorAll('.bracket-team-row');
+        if (rows.length === 2) {
+          const resolvedA = resolvePlaceholder(m.teamA, matches);
+          updateBracketTeamRow(rows[0], resolvedA, m.winner);
+          
+          const resolvedB = resolvePlaceholder(m.teamB, matches);
+          updateBracketTeamRow(rows[1], resolvedB, m.winner);
+        }
+        
         if (m.status === 'LIVE' || m.status === 'HALFTIME') {
           bracketCard.classList.add('bracket-match-card--live');
           let liveTag = bracketCard.querySelector('.bracket-match-live-tag');
@@ -194,15 +215,18 @@ function updateMatches(matches) {
         if (scoreAEl && scoreBEl) {
           const oldA = parseInt(scoreAEl.textContent);
           const oldB = parseInt(scoreBEl.textContent);
-          const newA = m.scoreA ?? 0;
-          const newB = m.scoreB ?? 0;
+          let newA = m.scoreA ?? 0;
+          if (m.shootoutA != null) newA = `(${m.shootoutA}) ${newA}`;
+          
+          let newB = m.scoreB ?? 0;
+          if (m.shootoutB != null) newB = `(${m.shootoutB}) ${newB}`;
 
-          if (oldA !== newA) {
+          if (oldA !== newA && scoreAEl.textContent !== String(newA)) {
             scoreAEl.textContent = newA;
             scoreAEl.classList.add('score-changed');
             setTimeout(() => scoreAEl.classList.remove('score-changed'), 2000);
           }
-          if (oldB !== newB) {
+          if (oldB !== newB && scoreBEl.textContent !== String(newB)) {
             scoreBEl.textContent = newB;
             scoreBEl.classList.add('score-changed');
             setTimeout(() => scoreBEl.classList.remove('score-changed'), 2000);
@@ -309,26 +333,47 @@ function updateMatches(matches) {
         }
       }
 
-      // Actualizar probabilidades
+      // Actualizar probabilidades y marcadores probables
       const probContainer = document.getElementById(`prob-container-${m.id}`);
-      if (probContainer) {
-        if (m.status === 'SCHEDULED' && m.probHome !== null && m.probDraw !== null && m.probAway !== null) {
-          probContainer.style.display = 'block';
-          probContainer.innerHTML = `
-            <div class="prob-header">Probabilidades de triunfo</div>
-            <div class="prob-labels">
-              <span class="prob-label-val prob-val-home">L: ${m.probHome}%</span>
-              <span class="prob-label-val prob-val-draw">E: ${m.probDraw}%</span>
-              <span class="prob-label-val prob-val-away">V: ${m.probAway}%</span>
-            </div>
-            <div class="prob-bar-track">
-              <div class="prob-bar-fill-home" style="width: ${m.probHome}%; background-color: ${getTeamColor(m.teamA)}; background-image: none;"></div>
-              <div class="prob-bar-fill-draw" style="width: ${m.probDraw}%"></div>
-              <div class="prob-bar-fill-away" style="width: ${m.probAway}%; background-color: ${getTeamColor(m.teamB)}; background-image: none;"></div>
-            </div>
-          `;
-        } else {
-          probContainer.style.display = 'none';
+      const scoreContainer = document.getElementById(`likely-scores-container-${m.id}`);
+      
+      const isLive = (m.status === 'LIVE' || m.status === 'HALFTIME' || m.status === 'IN_PLAY' || m.status === '1T' || m.status === '2T' || m.status === 'HT' || m.status === '90+');
+      
+      if (isLive) {
+        const minute = parseInt(m.matchMinute) || 0;
+        const interval = minute >= 85 ? 60000 : 180000;
+        const lastFetch = lastLiveForecastFetch[m.id] || 0;
+        
+        if (Date.now() - lastFetch >= interval) {
+          lastLiveForecastFetch[m.id] = Date.now();
+          updateLiveForecast(m);
+        }
+      } else {
+        if (scoreContainer) {
+          scoreContainer.style.display = 'none';
+        }
+        
+        if (probContainer) {
+          const teamsAreKnown = !/^(Ganador|Perdedor)\s+\d+$/i.test(m.teamA || '')
+                             && !/^(Ganador|Perdedor)\s+\d+$/i.test(m.teamB || '');
+          if (m.status === 'SCHEDULED' && teamsAreKnown && m.probHome !== null && m.probDraw !== null && m.probAway !== null) {
+            probContainer.style.display = 'block';
+            probContainer.innerHTML = `
+              <div class="prob-header">Probabilidades de triunfo</div>
+              <div class="prob-labels">
+                <span class="prob-label-val prob-val-home">L: ${m.probHome}%</span>
+                <span class="prob-label-val prob-val-draw">E: ${m.probDraw}%</span>
+                <span class="prob-label-val prob-val-away">V: ${m.probAway}%</span>
+              </div>
+              <div class="prob-bar-track">
+                <div class="prob-bar-fill-home" style="width: ${m.probHome}%; background-color: ${getTeamColor(m.teamA)}; background-image: none;"></div>
+                <div class="prob-bar-fill-draw" style="width: ${m.probDraw}%"></div>
+                <div class="prob-bar-fill-away" style="width: ${m.probAway}%; background-color: ${getTeamColor(m.teamB)}; background-image: none;"></div>
+              </div>
+            `;
+          } else {
+            probContainer.style.display = 'none';
+          }
         }
       }
 
@@ -709,6 +754,16 @@ async function openMatchDetails(matchId) {
     // Render Subs
     renderModalSubs(data.substitutions);
     
+    // Render Shootout
+    if (data.shootout && (data.shootout.teamA?.length > 0 || data.shootout.teamB?.length > 0)) {
+        document.getElementById('modal-btn-shootout').style.display = 'inline-block';
+        renderModalShootout(data.shootout);
+    } else {
+        document.getElementById('modal-btn-shootout').style.display = 'none';
+        document.getElementById('shootout-list-a').innerHTML = '';
+        document.getElementById('shootout-list-b').innerHTML = '';
+    }
+    
   } catch (e) {
     document.getElementById('modal-status-badge').textContent = 'Error';
     document.getElementById('modal-stats-container').innerHTML = '<div style="text-align:center; padding:2rem; color:#ff6b9d">Error de conexión al cargar detalles</div>';
@@ -901,6 +956,41 @@ function renderModalRoster(rosters, scorers, cards) {
   renderList(rosters.teamB.bench, 'lineup-bench-b', 'teamB');
 }
 
+function renderModalShootout(shootout) {
+  const renderShootoutColumn = (teamShots, containerId) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (!teamShots || teamShots.length === 0) {
+      container.innerHTML = '<li class="lineup-player-item" style="color:var(--text-secondary); text-align:center;">Sin tiradores registrados</li>';
+      return;
+    }
+    
+    teamShots.forEach(shot => {
+      const li = document.createElement('li');
+      li.className = 'lineup-player-item';
+      
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'player-number';
+      iconSpan.textContent = shot.didScore ? '🟢' : '🔴';
+      iconSpan.style.background = 'transparent';
+      iconSpan.style.fontSize = '1.2rem';
+      
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'player-name-text';
+      nameSpan.textContent = shot.player || '–';
+      
+      li.appendChild(iconSpan);
+      li.appendChild(nameSpan);
+      container.appendChild(li);
+    });
+  };
+  
+  renderShootoutColumn(shootout.teamA, 'shootout-list-a');
+  renderShootoutColumn(shootout.teamB, 'shootout-list-b');
+}
+
 function renderModalSubs(subs) {
   const renderSubsColumn = (teamSubs, containerId) => {
     const container = document.getElementById(containerId);
@@ -1014,124 +1104,224 @@ function isPlayerMatch(rosterName, eventText) {
 let sharedAudioCtx = null;
 
 const HALFTIME_ACTS = {
-  daft_punk: {
-    name: 'Daft Punk',
-    emojis: '🤖🤖 🪩 🎧',
-    dialog: 'AROUND THE WORLD! 🤖🎧',
+  carnaval: {
+    name: 'Carnaval de Río',
+    emojis: '🦜 💃 🥁 🪶 ✨',
+    dialog: '¡SAMBA! ¡Siente la energía de Río! 🦜💃',
     dance: 'dance-bounce',
-    spotlights: ['rgba(0, 240, 255, 0.45)', 'rgba(92, 0, 255, 0.45)'],
+    spotlights: ['rgba(57, 255, 20, 0.65)', 'rgba(255, 235, 59, 0.65)', 'rgba(0, 191, 255, 0.65)'],
+    crowd: '🙌💃🕺🥳',
+    particles: ['🎉', '🥁', '✨', '🦜'],
     playMusic: (ctx) => {
-      playArpeggio(ctx, [261.63, 329.63, 392.00, 493.88], 'square', 0.08, 0.08);
+      const times = [0, 0.15, 0.3, 0.45, 0.6, 0.75];
+      times.forEach(t => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, ctx.currentTime + t);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime + t);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + t);
+        osc.stop(ctx.currentTime + t + 0.1);
+      });
+      playMelody(ctx, [261.63, 329.63, 392.00, 329.63], 'sine', 0.2, 0.2, 0.1);
     }
   },
-  queen: {
-    name: 'Queen',
-    emojis: '👑 👨🏻‍🦱 🎤 🎸',
-    dialog: '¡AY-OH! 👑🎤',
-    dance: 'dance-jump',
-    spotlights: ['rgba(255, 215, 0, 0.45)', 'rgba(255, 0, 85, 0.45)'],
-    playMusic: (ctx) => {
-      playPowerChord(ctx, [130.81, 196.00, 261.63], 'sawtooth', 0.5);
-    }
-  },
-  beatles: {
-    name: 'The Beatles',
-    emojis: '🎸 🎸 🎸 🥁',
-    dialog: 'All you need is love! 💛',
+  drones: {
+    name: 'Show de Drones 3D',
+    emojis: '🛸 🌌 💫 ⭐ 🛸',
+    dialog: '¡Dibujando galaxias en el cielo! 🌌✨',
     dance: 'dance-swing',
-    spotlights: ['rgba(0, 255, 136, 0.35)', 'rgba(255, 170, 0, 0.35)'],
+    spotlights: ['rgba(0, 240, 255, 0.65)', 'rgba(180, 0, 255, 0.65)'],
+    crowd: '🤩👀🌌🔭',
+    particles: ['🛸', '✨', '⭐', '💫'],
     playMusic: (ctx) => {
-      playMelody(ctx, [261.63, 293.66, 329.63, 392.00], 'triangle', 0.15, 0.15);
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(100, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 1.2);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.8);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 1.2);
     }
   },
-  elvis: {
-    name: 'Elvis Presley',
-    emojis: '🕺 🕶️ 🎸 🔥',
-    dialog: '¡Thank you very much! 🕶️',
+  circo: {
+    name: 'Circo Acrobático de Neón',
+    emojis: '🎪 🤸‍♀️ 🎭 🔥 🎪',
+    dialog: '¡Acróbatas volando sobre el fuego! 🎪🔥',
+    dance: 'dance-jump',
+    spotlights: ['rgba(255, 0, 127, 0.65)', 'rgba(138, 43, 226, 0.65)', 'rgba(255, 215, 0, 0.55)'],
+    crowd: '😮😲👏👏',
+    particles: ['🎪', '✨', '🎈', '🤸'],
+    playMusic: (ctx) => {
+      playArpeggio(ctx, [523.25, 659.25, 783.99, 987.77, 1046.50], 'triangle', 0.15, 0.12, 0.08);
+    }
+  },
+  fuegos: {
+    name: 'Fuegos Artificiales Gigantes',
+    emojis: '🎆 🎇 💥 🔥 🎆',
+    dialog: '¡KABOOM! ¡El cielo se ilumina! 🎆💥',
+    dance: 'dance-jump',
+    spotlights: ['rgba(255, 0, 50, 0.65)', 'rgba(0, 255, 100, 0.65)', 'rgba(255, 255, 255, 0.55)'],
+    crowd: '🎆🎇💥🙌',
+    particles: ['💥', '✨', '🔥', '🎇'],
+    playMusic: (ctx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(30, ctx.currentTime + 0.8);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.8);
+    }
+  },
+  laser: {
+    name: 'DJ & Batalla de Láseres',
+    emojis: '🎧 💿 ⚡ 🟢 🔴',
+    dialog: '¡Siente los graves del Neón! ⚡🎧',
     dance: 'dance-wobble',
-    spotlights: ['rgba(255, 0, 85, 0.45)', 'rgba(255, 170, 0, 0.45)'],
+    spotlights: ['rgba(255, 20, 147, 0.65)', 'rgba(57, 255, 20, 0.65)', 'rgba(0, 240, 255, 0.65)'],
+    crowd: '🙌🕺⚡💃',
+    particles: ['⚡', '🎵', '🟢', '🔴'],
     playMusic: (ctx) => {
-      playMelody(ctx, [130.81, 164.81, 196.00, 220.00], 'sawtooth', 0.12, 0.12);
+      playArpeggio(ctx, [130.81, 130.81, 261.63, 196.00, 261.63, 392.00], 'square', 0.08, 0.08, 0.06);
     }
   },
-  taylor: {
-    name: 'Taylor Swift',
-    emojis: '🎤 👱‍♀️ ✨ 🧣',
-    dialog: 'Shake it off! ✨',
-    dance: 'dance-bounce',
-    spotlights: ['rgba(255, 105, 180, 0.45)', 'rgba(255, 255, 255, 0.45)'],
-    playMusic: (ctx) => {
-      playArpeggio(ctx, [523.25, 587.33, 659.25, 783.99], 'sine', 0.1, 0.1, 0.08);
-    }
-  },
-  bob_marley: {
-    name: 'Bob Marley',
-    emojis: '🎤 🦁 🇯🇲',
-    dialog: 'No woman, no cry... 🇯🇲',
-    dance: 'dance-swing',
-    spotlights: ['rgba(0, 255, 136, 0.45)', 'rgba(255, 215, 0, 0.45)', 'rgba(255, 0, 0, 0.45)'],
-    playMusic: (ctx) => {
-      playReggaeChop(ctx, [261.63, 329.63, 392.00], 0.25);
-    }
-  },
-  kiss: {
-    name: 'KISS',
-    emojis: '👨‍🎤 🎸 🥁 🔥',
-    dialog: 'Rock and roll all nite! 🤘',
-    dance: 'dance-jump',
-    spotlights: ['rgba(255, 0, 85, 0.5)', 'rgba(255, 69, 0, 0.5)'],
-    playMusic: (ctx) => {
-      playPowerChord(ctx, [130.81, 196.00, 261.63, 329.63], 'sawtooth', 0.6);
-    }
-  },
-  lady_gaga: {
-    name: 'Lady Gaga',
-    emojis: '🛸 👱‍♀️ 🕶️ 🎤',
-    dialog: 'Bad romance... 🕶️',
+  monsters: {
+    name: 'Monster Trucks de Fuego',
+    emojis: '🛞 🏎️ 🔥 💥 🛞',
+    dialog: '¡Ruedas gigantes saltando fuego! 🔥🏎️',
     dance: 'dance-wobble',
-    spotlights: ['rgba(255, 0, 255, 0.45)', 'rgba(57, 255, 20, 0.45)'],
+    spotlights: ['rgba(255, 69, 0, 0.65)', 'rgba(255, 0, 0, 0.65)'],
+    crowd: '🤘🔥🏎️💥',
+    particles: ['🔥', '💥', '🛞', '💨'],
     playMusic: (ctx) => {
-      playMelody(ctx, [261.63, 311.13, 392.00, 311.13], 'square', 0.14, 0.14);
+      playPowerChord(ctx, [82.41, 123.47, 164.81], 'sawtooth', 0.8, 0.12);
     }
   },
-  dua_lipa: {
-    name: 'Dua Lipa',
-    emojis: '💃 ✨ 🪩 🕺',
-    dialog: 'Levitating! 🪩',
-    dance: 'dance-bounce',
-    spotlights: ['rgba(255, 0, 127, 0.45)', 'rgba(0, 240, 255, 0.45)'],
-    playMusic: (ctx) => {
-      playMelody(ctx, [130.81, 261.63, 196.00, 261.63], 'square', 0.12, 0.12);
-    }
-  },
-  luis_miguel: {
-    name: 'Luis Miguel',
-    emojis: '🤵 🎤 ☀️ 🌊',
-    dialog: '¡Entrégate! ☀️',
-    dance: 'dance-jump',
-    spotlights: ['rgba(255, 215, 0, 0.5)', 'rgba(255, 255, 255, 0.4)'],
-    playMusic: (ctx) => {
-      playMelody(ctx, [392.00, 493.88, 587.33, 783.99], 'triangle', 0.16, 0.16);
-    }
-  },
-  guns_n_roses: {
-    name: 'Guns N Roses',
-    emojis: '🎩 🎸 🌹 🥁',
-    dialog: "Sweet child o' mine... 🌹",
+  aurora: {
+    name: 'Auroras Boreales',
+    emojis: '🌌 ❄️ 🐋 🔮 ✨',
+    dialog: '¡Las luces del norte en el estadio! 🌌💚',
     dance: 'dance-swing',
-    spotlights: ['rgba(255, 0, 0, 0.45)', 'rgba(20, 20, 20, 0.6)'],
+    spotlights: ['rgba(0, 255, 127, 0.65)', 'rgba(186, 85, 211, 0.65)', 'rgba(0, 255, 255, 0.65)'],
+    crowd: '🤩🥶🌌🪐',
+    particles: ['❄️', '✨', '🌌', '🔮'],
     playMusic: (ctx) => {
-      playMelody(ctx, [523.25, 261.63, 392.00, 349.23], 'sawtooth', 0.12, 0.12);
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(329.63, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(440.00, ctx.currentTime + 1.5);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 1.5);
     }
   },
-  britney: {
-    name: 'Britney Spears',
-    emojis: '👱‍♀️ 🎀 🎤 🔴',
-    dialog: 'Oops!... I did it again 🎀',
+  dragon: {
+    name: 'Danza del Dragón',
+    emojis: '🐉 🏮 🦁 🥁 💥',
+    dialog: '¡Mística danza del Dragón de Fuego! 🐉🏮',
     dance: 'dance-bounce',
-    spotlights: ['rgba(255, 20, 147, 0.45)', 'rgba(255, 0, 0, 0.45)'],
+    spotlights: ['rgba(255, 0, 0, 0.75)', 'rgba(255, 215, 0, 0.75)', 'rgba(255, 165, 0, 0.65)'],
+    crowd: '🙌🐉🥁🎇',
+    particles: ['🏮', '🐉', '✨', '💥'],
     playMusic: (ctx) => {
-      playMelody(ctx, [261.63, 311.13, 349.23, 392.00], 'sawtooth', 0.1, 0.1);
+      const beats = [0, 0.2, 0.4, 0.6, 0.8];
+      beats.forEach(b => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(80, ctx.currentTime + b);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime + b);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + b + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + b);
+        osc.stop(ctx.currentTime + b + 0.18);
+      });
+    }
+  },
+  holi: {
+    name: 'Festival del Color Holi',
+    emojis: '🎨 🌈 💃 🕺 ✨',
+    dialog: '¡Explosión total de colores neón! 🌈🎨',
+    dance: 'dance-jump',
+    spotlights: ['rgba(255, 20, 147, 0.75)', 'rgba(255, 255, 0, 0.75)', 'rgba(0, 240, 255, 0.65)'],
+    crowd: '🙌🎨🌈🕺',
+    particles: ['🎨', '🌈', '✨', '💦'],
+    playMusic: (ctx) => {
+      playMelody(ctx, [329.63, 349.23, 392.00, 523.25], 'triangle', 0.12, 0.12, 0.08);
+    }
+  },
+  motos: {
+    name: 'Globo de la Muerte (Acróbatas)',
+    emojis: '🏍️ 🌐 ⚡ 💥 🏍️',
+    dialog: '¡Adrenalina extrema sobre dos ruedas! ⚡🏍️',
+    dance: 'dance-wobble',
+    spotlights: ['rgba(255, 255, 0, 0.75)', 'rgba(255, 69, 0, 0.65)', 'rgba(0, 0, 0, 0.1)'],
+    crowd: '😮😲🤘🔥',
+    particles: ['🏍️', '⚡', '💥', '💨'],
+    playMusic: (ctx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(90, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(250, ctx.currentTime + 1.0);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 1.0);
+    }
+  },
+  fuentes: {
+    name: 'Fuentes Danzantes RGB',
+    emojis: '⛲ 💦 🌈 🌊 ✨',
+    dialog: '¡Agua, luz y sonido sincronizados! ⛲💦',
+    dance: 'dance-swing',
+    spotlights: ['rgba(0, 191, 255, 0.65)', 'rgba(0, 255, 191, 0.65)', 'rgba(138, 43, 226, 0.65)'],
+    crowd: '🤩💦🌊⛲',
+    particles: ['⛲', '💦', '🌊', '✨'],
+    playMusic: (ctx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 1.5);
+      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 1.5);
+    }
+  },
+  chiptune: {
+    name: 'Arcade Retro de los 80',
+    emojis: '🕹️ 👾 ⚡ 🛼 👾',
+    dialog: '¡Invasión pixelada de 8-bits! 🕹️👾',
+    dance: 'dance-bounce',
+    spotlights: ['rgba(255, 0, 127, 0.75)', 'rgba(0, 0, 255, 0.75)', 'rgba(57, 255, 20, 0.65)'],
+    crowd: '🕹️👾🛼👾',
+    particles: ['👾', '🕹️', '✨', '🍒'],
+    playMusic: (ctx) => {
+      playArpeggio(ctx, [523.25, 587.33, 659.25, 783.99, 1046.50], 'square', 0.08, 0.08, 0.06);
     }
   }
 };
@@ -1200,16 +1390,21 @@ function populateHalftimeShow(el, playAudio = true) {
 
   const lightColor1 = act.spotlights[0];
   const lightColor2 = act.spotlights[1] || act.spotlights[0];
+  const lightColor3 = act.spotlights[2] || 'transparent';
+
+  const particles = act.particles || ['🎵', '🎶', '✨', '🎸'];
+  const crowd = act.crowd || '🙌🙌🙌🙌';
 
   el.innerHTML = `
     <div class="ht-stage-bg">
       <div class="ht-spotlight ht-spotlight-1" style="background: linear-gradient(to top, ${lightColor1}, transparent 85%);"></div>
       <div class="ht-spotlight ht-spotlight-2" style="background: linear-gradient(to top, ${lightColor2}, transparent 85%);"></div>
-      <span class="ht-particle" style="left:15%; animation-delay: 0s; --p-dx: 15px;">🎵</span>
-      <span class="ht-particle" style="left:38%; animation-delay: 1.2s; --p-dx: -25px;">🎶</span>
-      <span class="ht-particle" style="left:60%; animation-delay: 0.6s; --p-dx: 20px;">✨</span>
-      <span class="ht-particle" style="left:82%; animation-delay: 1.8s; --p-dx: -15px;">🎸</span>
-      <div class="ht-crowd">🙌🙌🙌🙌</div>
+      ${lightColor3 !== 'transparent' ? `<div class="ht-spotlight ht-spotlight-3" style="background: linear-gradient(to top, ${lightColor3}, transparent 85%); position: absolute; bottom: 0; left: 50%; width: 50px; height: 100%; transform: translateX(-50%) rotate(0deg); transform-origin: bottom center; filter: blur(8px); opacity: 0.45; animation: htSpotlightLeft 3.5s infinite alternate ease-in-out;"></div>` : ''}
+      <span class="ht-particle" style="left:15%; animation-delay: 0s; --p-dx: 15px;">${escapeHtml(particles[0])}</span>
+      <span class="ht-particle" style="left:38%; animation-delay: 1.2s; --p-dx: -25px;">${escapeHtml(particles[1])}</span>
+      <span class="ht-particle" style="left:60%; animation-delay: 0.6s; --p-dx: 20px;">${escapeHtml(particles[2])}</span>
+      <span class="ht-particle" style="left:82%; animation-delay: 1.8s; --p-dx: -15px;">${escapeHtml(particles[3])}</span>
+      <div class="ht-crowd">${escapeHtml(crowd)}</div>
     </div>
     <div class="halftime-bubble" style="z-index: 5;">Show de medio tiempo</div>
     <div class="halftime-character-wrap" style="z-index: 5; text-align: center;">
@@ -1463,6 +1658,239 @@ function initPointsHistoryChart() {
     }
   });
 }
+
+// ── Funciones de Ayuda para el Bracket en Vivo ──
+
+function resolvePlaceholder(placeholder, matches) {
+  if (!placeholder) return '';
+  
+  // Helper para traducir IDs a orden secuencial cronológico
+  const getMatchDisplayId = (matchId) => {
+    const ffMatches = matches.filter(m => parseInt(m.id) >= 73);
+    const idx = ffMatches.findIndex(m => parseInt(m.id) === parseInt(matchId));
+    return idx !== -1 ? (73 + idx) : matchId;
+  };
+  
+  // 1. Verificar si es Ganador o Perdedor de un partido anterior: "Ganador {id}" o "Perdedor {id}"
+  const matchPrev = placeholder.match(/^(Ganador|Perdedor)\s+(\d+)$/);
+  if (matchPrev) {
+    const type = matchPrev[1];
+    const prevMatchId = parseInt(matchPrev[2]);
+    const prevMatch = matches.find(m => parseInt(m.id) === prevMatchId);
+    
+    if (prevMatch && prevMatch.winner) {
+      if (type === 'Ganador') {
+        return prevMatch.winner;
+      } else {
+        // Perdedor
+        return (prevMatch.winner === prevMatch.teamA) ? prevMatch.teamB : prevMatch.teamA;
+      }
+    }
+    
+    const dispId = getMatchDisplayId(prevMatchId);
+    return `${type} ${dispId}`;
+  }
+  
+  return placeholder;
+}
+
+function getFlagUrl(team) {
+  const map = {
+    'México': 'mx', 'Sudáfrica': 'za', 'República de Corea': 'kr',
+    'República Checa': 'cz', 'Chequia': 'cz', 'Canadá': 'ca',
+    'Bosnia y Herzegovina': 'ba', 'Catar': 'qa', 'Suiza': 'ch',
+    'Brasil': 'br', 'Marruecos': 'ma', 'Haití': 'ht', 'Escocia': 'gb-sct',
+    'Estados Unidos': 'us', 'EE. UU.': 'us', 'Paraguay': 'py',
+    'Australia': 'au', 'Turquía': 'tr', 'Alemania': 'de',
+    'Curazao': 'cw', 'Costa de Marfil': 'ci', 'Ecuador': 'ec',
+    'Países Bajos': 'nl', 'Japón': 'jp', 'Suecia': 'se', 'Túnez': 'tn',
+    'Bélgica': 'be', 'Egipto': 'eg', 'RI de Irán': 'ir', 'Irán': 'ir',
+    'Nueva Zelanda': 'nz', 'España': 'es', 'Cabo Verde': 'cv',
+    'Islas de Cabo Verde': 'cv', 'Arabia Saudí': 'sa', 'Uruguay': 'uy',
+    'Francia': 'fr', 'Senegal': 'sn', 'Irak': 'iq', 'Noruega': 'no',
+    'Argentina': 'ar', 'Argelia': 'dz', 'Austria': 'at', 'Jordania': 'jo',
+    'Portugal': 'pt', 'RD Congo': 'cd', 'RD de Congo': 'cd',
+    'Uzbekistán': 'uz', 'Colombia': 'co', 'Inglaterra': 'gb-eng',
+    'Croacia': 'hr', 'Ghana': 'gh', 'Panamá': 'pa'
+  };
+  const code = map[team];
+  return code ? `https://flagcdn.com/w80/${code}.png` : '';
+}
+
+function updateBracketTeamRow(row, teamName, winnerName) {
+  const nameEl = row.querySelector('.bracket-team-name');
+  if (nameEl) {
+    const isPlaceholder = teamName.includes('Ganador') || teamName.includes('Perdedor') || teamName.includes('3A') || teamName.includes('3B') || /^[12][A-L]$/.test(teamName);
+    
+    let htmlContent = teamName;
+    if (isPlaceholder) {
+      htmlContent = `<span class="bracket-placeholder-team">${teamName}</span>`;
+    }
+    
+    if (nameEl.innerHTML !== htmlContent) {
+      nameEl.innerHTML = htmlContent;
+    }
+  }
+  
+  // Actualizar bandera
+  const infoEl = row.querySelector('.bracket-team-info');
+  if (infoEl) {
+    const flagUrl = getFlagUrl(teamName);
+    const existingImg = infoEl.querySelector('.bracket-team-flag');
+    const existingPlaceholder = infoEl.querySelector('.bracket-team-flag-placeholder');
+    
+    if (flagUrl) {
+      if (existingPlaceholder) {
+        existingPlaceholder.remove();
+      }
+      if (existingImg) {
+        if (existingImg.src !== flagUrl) {
+          existingImg.src = flagUrl;
+        }
+      } else {
+        const img = document.createElement('img');
+        img.className = 'bracket-team-flag';
+        img.src = flagUrl;
+        infoEl.insertBefore(img, infoEl.firstChild);
+      }
+    } else {
+      if (existingImg) {
+        existingImg.remove();
+      }
+      if (!existingPlaceholder) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'bracket-team-flag-placeholder';
+        infoEl.insertBefore(placeholder, infoEl.firstChild);
+      }
+    }
+  }
+  
+  // Actualizar clases de ganador
+  if (winnerName && teamName && winnerName === teamName) {
+    row.classList.add('winner-row');
+    const scoreEl = row.querySelector('.bracket-team-score');
+    if (scoreEl) scoreEl.classList.add('winner-score');
+  } else {
+    row.classList.remove('winner-row');
+    const scoreEl = row.querySelector('.bracket-team-score');
+    if (scoreEl) scoreEl.classList.remove('winner-score');
+  }
+}
+
+async function updateLiveForecast(m) {
+  const probContainer = document.getElementById(`prob-container-${m.id}`);
+  const scoreContainer = document.getElementById(`likely-scores-container-${m.id}`);
+  
+  const fallbackHome = m.probHome;
+  const fallbackDraw = m.probDraw;
+  const fallbackAway = m.probAway;
+
+  function showFallback() {
+    if (probContainer && fallbackHome !== null && fallbackDraw !== null && fallbackAway !== null) {
+      probContainer.style.display = 'block';
+      probContainer.innerHTML = `
+        <div class="prob-header" style="display:flex; justify-content:space-between; align-items:center">
+          <span>Probabilidades de triunfo</span>
+          <span class="live-status-label error" style="color: #ff9800; font-weight: bold; font-size: 0.72rem;">En vivo no actualizado ⚠️</span>
+        </div>
+        <div class="prob-labels">
+          <span class="prob-label-val prob-val-home">L: ${parseFloat(fallbackHome).toFixed(1)}%</span>
+          <span class="prob-label-val prob-val-draw">E: ${parseFloat(fallbackDraw).toFixed(1)}%</span>
+          <span class="prob-label-val prob-val-away">V: ${parseFloat(fallbackAway).toFixed(1)}%</span>
+        </div>
+        <div class="prob-bar-track">
+          <div class="prob-bar-fill-home" style="width: ${fallbackHome}%; background-color: ${getTeamColor(m.teamA)}; background-image: none;"></div>
+          <div class="prob-bar-fill-draw" style="width: ${fallbackDraw}%"></div>
+          <div class="prob-bar-fill-away" style="width: ${fallbackAway}%; background-color: ${getTeamColor(m.teamB)}; background-image: none;"></div>
+        </div>
+      `;
+    }
+    if (scoreContainer) {
+      scoreContainer.style.display = 'none';
+    }
+  }
+  
+  try {
+    const res = await fetch(`api/get_live_forecast.php?match_id=${m.id}&t=${Date.now()}`, {
+      method: 'POST'
+    });
+    if (!res.ok) throw new Error('API response not OK');
+    const data = await res.json();
+    
+    if (data.error) {
+      console.warn(`API returned error for match ${m.id}:`, data.error);
+      showFallback();
+      return;
+    }
+    
+    const match = data.matches?.[0] || data.data?.matches?.[0] || data;
+    const prediction = match?.prediction;
+    
+    if (prediction && prediction.probabilities) {
+      const probs = prediction.probabilities;
+      
+      if (probContainer) {
+        probContainer.style.display = 'block';
+        probContainer.innerHTML = `
+          <div class="prob-header" style="display:flex; justify-content:space-between; align-items:center">
+            <span>Probabilidades de triunfo</span>
+            <span class="live-status-label">En Vivo 🟢</span>
+          </div>
+          <div class="prob-labels">
+            <span class="prob-label-val prob-val-home">L: ${parseFloat(probs.home).toFixed(1)}%</span>
+            <span class="prob-label-val prob-val-draw">E: ${parseFloat(probs.draw).toFixed(1)}%</span>
+            <span class="prob-label-val prob-val-away">V: ${parseFloat(probs.away).toFixed(1)}%</span>
+          </div>
+          <div class="prob-bar-track">
+            <div class="prob-bar-fill-home" style="width: ${probs.home}%; background-color: ${getTeamColor(m.teamA)}; background-image: none;"></div>
+            <div class="prob-bar-fill-draw" style="width: ${probs.draw}%"></div>
+            <div class="prob-bar-fill-away" style="width: ${probs.away}%; background-color: ${getTeamColor(m.teamB)}; background-image: none;"></div>
+          </div>
+        `;
+      }
+      
+      let scores = match.most_likely_scores || match.mostLikelyScores || match.scores || match.score_options || match.scoreOptions || match.top_scores || match.topScores || prediction.most_likely_scores || prediction.mostLikelyScores || prediction.scores || prediction.score_options || prediction.scoreOptions || prediction.top_scores || prediction.topScores;
+      
+      if (scoreContainer && scores && Array.isArray(scores) && scores.length > 0) {
+        const sortedScores = [...scores].sort((a, b) => {
+          if (a.rank !== undefined && b.rank !== undefined) {
+            return a.rank - b.rank;
+          }
+          return (b.probability || 0) - (a.probability || 0);
+        });
+        
+        const topScores = sortedScores.slice(0, 3);
+        
+        scoreContainer.style.display = 'block';
+        let scoresHtml = `
+          <div class="likely-scores-title">Marcadores Probables</div>
+        `;
+        topScores.forEach((s, idx) => {
+          const rank = s.rank || (idx + 1);
+          const prob = s.probability !== undefined ? `${parseFloat(s.probability).toFixed(1)}%` : '–';
+          scoresHtml += `
+            <div class="likely-score-row">
+              <span class="likely-score-rank">Rango #${rank}</span>
+              <span class="likely-score-val">${s.score || (s.scoreA + '-' + s.scoreB)}</span>
+              <span class="likely-score-prob">${prob}</span>
+            </div>
+          `;
+        });
+        scoreContainer.innerHTML = scoresHtml;
+      } else {
+        if (scoreContainer) {
+          scoreContainer.style.display = 'none';
+        }
+      }
+    } else {
+      showFallback();
+    }
+  } catch (err) {
+    console.error(`Error updating live forecast for match ${m.id}:`, err);
+    showFallback();
+  }
+}
+
 
 
 

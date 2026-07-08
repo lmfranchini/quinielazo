@@ -52,8 +52,11 @@ foreach ($matches as $m) {
         'id'           => (int)$m['id'],
         'teamA'        => $m['teamA'],
         'teamB'        => $m['teamB'],
+        'winner'       => $m['winner'],
         'scoreA'       => is_numeric($m['scoreA']) ? (int)$m['scoreA'] : null,
         'scoreB'       => is_numeric($m['scoreB']) ? (int)$m['scoreB'] : null,
+        'shootoutA'    => isset($m['shootoutA']) && is_numeric($m['shootoutA']) ? (int)$m['shootoutA'] : null,
+        'shootoutB'    => isset($m['shootoutB']) && is_numeric($m['shootoutB']) ? (int)$m['shootoutB'] : null,
         'status'       => $status,
         'minute'       => $m['matchMinute'],
         'isFinished'   => (bool)$m['isFinished'],
@@ -68,6 +71,7 @@ foreach ($matches as $m) {
         'probHome'     => is_numeric($m['probHome']) ? (float)$m['probHome'] : null,
         'probDraw'     => is_numeric($m['probDraw']) ? (float)$m['probDraw'] : null,
         'probAway'     => is_numeric($m['probAway']) ? (float)$m['probAway'] : null,
+        'probLastUpdate' => $m['probLastUpdate'] ?? null,
     ];
 }
 
@@ -77,7 +81,7 @@ $users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role
 // Obtener TODOS los pronósticos para calcular puntos proyectados
 $allPreds = $db->query("
     SELECT p.userId, p.matchId, p.scoreA AS predA, p.scoreB AS predB, p.points AS confirmedPts,
-           m.scoreA AS matchScoreA, m.scoreB AS matchScoreB, m.status, m.isFinished
+           m.scoreA AS matchScoreA, m.scoreB AS matchScoreB, m.status, m.isFinished, m.winner, m.teamA, m.teamB
     FROM `Prediction` p
     INNER JOIN `Match` m ON p.matchId = m.id
 ")->fetchAll();
@@ -97,7 +101,8 @@ foreach ($allPreds as $ap) {
         // Puntos proyectados (partido en vivo)
         $livePts = calculatePoints(
             (int)$ap['predA'], (int)$ap['predB'],
-            $ap['matchScoreA'], $ap['matchScoreB']
+            $ap['matchScoreA'], $ap['matchScoreB'],
+            $ap['winner'] ?? null, $ap['teamA'], $ap['teamB']
         );
         $userPoints[$uid]['projected'] += $livePts;
     }

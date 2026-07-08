@@ -62,6 +62,8 @@ foreach ($allEvents as $event) {
     
     $homeTeamId = '';
     $awayTeamId = '';
+    $winnerHomeApi = false;
+    $winnerAwayApi = false;
     foreach ($comp['competitors'] as $c) {
         $teamName = isset($c['team']['displayName']) ? $c['team']['displayName'] : '';
         if (empty($teamName) && isset($c['team']['shortDisplayName'])) {
@@ -69,15 +71,18 @@ foreach ($allEvents as $event) {
         }
         $score = isset($c['score']) ? intval($c['score']) : null;
         $teamId = isset($c['team']['id']) ? $c['team']['id'] : '';
+        $winnerBool = isset($c['winner']) ? (bool)$c['winner'] : false;
         
         if ($c['homeAway'] === 'home') {
             $homeTeamApi = $teamName;
             $scoreHome = $score;
             $homeTeamId = $teamId;
+            $winnerHomeApi = $winnerBool;
         } else {
             $awayTeamApi = $teamName;
             $scoreAway = $score;
             $awayTeamId = $teamId;
+            $winnerAwayApi = $winnerBool;
         }
     }
     
@@ -164,14 +169,30 @@ foreach ($allEvents as $event) {
         }
     }
     
+    // Determinar ganador
+    $winner = null;
+    if ($isFinished) {
+        if ($scoreHome > $scoreAway) {
+            $winner = $homeTeam;
+        } elseif ($scoreAway > $scoreHome) {
+            $winner = $awayTeam;
+        } else {
+            if ($winnerHomeApi) {
+                $winner = $homeTeam;
+            } elseif ($winnerAwayApi) {
+                $winner = $awayTeam;
+            }
+        }
+    }
+    
     // Actualizar en la DB
     $upd = $db->prepare("UPDATE `Match` SET 
         scoreA = ?, scoreB = ?, status = ?, matchMinute = ?, 
-        isFinished = ?, externalId = ?, lastApiUpdate = NOW(), scorersData = ?, cardsData = ?, updatedAt = NOW()
+        isFinished = ?, externalId = ?, lastApiUpdate = NOW(), scorersData = ?, cardsData = ?, winner = ?, updatedAt = NOW()
         WHERE id = ?");
     $upd->execute(array(
         $scoreHome, $scoreAway, $ourStatus, $minute,
-        $isFinished, $eventId, $scorersDataJson, $cardsDataJson, $dbMatch['id']
+        $isFinished, $eventId, $scorersDataJson, $cardsDataJson, $winner, $dbMatch['id']
     ));
     
     $updated++;
@@ -185,6 +206,13 @@ foreach ($allEvents as $event) {
     if ($isFinished && !$dbMatch['isFinished'] && $scoreHome !== null && $scoreAway !== null) {
         logMsg('   → Calculando puntos definitivos...');
         calculateMatchPoints($db, $dbMatch['id'], intval($scoreHome), intval($scoreAway));
+        logMsg('   → Resolviendo clasificados de fases finales automáticamente...');
+        try {
+            resolveAndSaveAllPlaceholders($db);
+            logMsg('   → Clasificados actualizados con éxito.');
+        } catch (Exception $eResolve) {
+            logMsg('   ⚠️ Error al actualizar clasificados: ' . $eResolve->getMessage());
+        }
     }
 }
 
@@ -202,7 +230,12 @@ try {
             probLastUpdate IS NULL 
             OR (
               date < DATE_ADD(NOW(), INTERVAL 24 HOUR) 
-              AND probLastUpdate < DATE_SUB(NOW(), INTERVAL 12 HOUR)
+              AND probLastUpdate < DATE_SUB(NOW(), INTERVAL 6 HOUR)
+            )
+            OR (
+              date < DATE_ADD(NOW(), INTERVAL 45 MINUTE)
+              AND date > NOW()
+              AND probLastUpdate < DATE_SUB(NOW(), INTERVAL 15 MINUTE)
             )
           )
         ORDER BY date ASC 
@@ -214,10 +247,20 @@ try {
     foreach ($matchesToSync as $mSync) {
         logMsg("🔮 Buscando probabilidades para: {$mSync['teamA']} vs {$mSync['teamB']} (ID: {$mSync['id']})");
         $probData = fetchMatchProbabilitiesFromApi($mSync['id'], $mSync['teamA'], $mSync['teamB'], $mSync['date']);
-        if ($probData && isset($probData['status']) && $probData['status'] === 'ok' && isset($probData['probabilities'])) {
-            $homeProb = floatval($probData['probabilities']['home']);
-            $drawProb = floatval($probData['probabilities']['draw']);
-            $awayProb = floatval($probData['probabilities']['away']);
+        // Normalizar: N8N devuelve probabilidades dentro de prediction.probabilities
+        $rawProbs = null;
+        if ($probData) {
+            if (isset($probData['probabilities']) && is_array($probData['probabilities'])) {
+                $rawProbs = $probData['probabilities'];
+            } elseif (isset($probData['prediction']['probabilities']) && is_array($probData['prediction']['probabilities'])) {
+                $rawProbs = $probData['prediction']['probabilities'];
+            }
+        }
+
+        if ($rawProbs && isset($rawProbs['home'], $rawProbs['draw'], $rawProbs['away'])) {
+            $homeProb = floatval($rawProbs['home']);
+            $drawProb = floatval($rawProbs['draw']);
+            $awayProb = floatval($rawProbs['away']);
             
             $updateStmt = $db->prepare("
                 UPDATE `Match` 
@@ -251,13 +294,36 @@ outputLog();
 // ── Funciones ──
 
 function calculateMatchPoints($db, $matchId, $scoreA, $scoreB) {
+    // Obtener detalles de equipos y ganador del desempate/penales
+    $stmtM = $db->prepare("SELECT teamA, teamB, winner FROM `Match` WHERE id = ?");
+    $stmtM->execute([$matchId]);
+    $m = $stmtM->fetch();
+    $winner = $m ? $m['winner'] : null;
+    $teamA = $m ? $m['teamA'] : '';
+    $teamB = $m ? $m['teamB'] : '';
+
     $preds = $db->prepare("SELECT * FROM `Prediction` WHERE matchId = ?");
     $preds->execute(array($matchId));
     
     foreach ($preds->fetchAll() as $pred) {
-        $pts = calculatePoints(intval($pred['scoreA']), intval($pred['scoreB']), $scoreA, $scoreB);
+        $pts = calculatePoints(intval($pred['scoreA']), intval($pred['scoreB']), $scoreA, $scoreB, $winner, $teamA, $teamB);
         $db->prepare("UPDATE `Prediction` SET points = ?, updatedAt = NOW() WHERE id = ?")
            ->execute(array($pts, $pred['id']));
+    }
+    
+    // Calcular de forma paralela para la quiniela de fase final si el partido es de fase final
+    if ($matchId >= 73) {
+        try {
+            $predsFF = $db->prepare("SELECT * FROM `PredictionFaseFinal` WHERE matchId = ?");
+            $predsFF->execute(array($matchId));
+            foreach ($predsFF->fetchAll() as $predFF) {
+                $ptsFF = calculatePoints(intval($predFF['scoreA']), intval($predFF['scoreB']), $scoreA, $scoreB, $winner, $teamA, $teamB);
+                $db->prepare("UPDATE `PredictionFaseFinal` SET points = ?, updatedAt = NOW() WHERE id = ?")
+                   ->execute(array($ptsFF, $predFF['id']));
+            }
+        } catch (Exception $e) {
+            // Ignorar si falla
+        }
     }
     
     recalcTotalPoints($db);
@@ -270,6 +336,17 @@ function recalcTotalPoints($db) {
         INNER JOIN `Match` m ON p.matchId = m.id 
         WHERE p.userId = u.id AND m.isFinished = 1
     )");
+    
+    try {
+        $db->exec("UPDATE `User` u SET pointsFaseFinal = (
+            SELECT COALESCE(SUM(p.points), 0) 
+            FROM `PredictionFaseFinal` p 
+            INNER JOIN `Match` m ON p.matchId = m.id 
+            WHERE p.userId = u.id AND m.isFinished = 1
+        )");
+    } catch (Exception $e) {
+        // Ignorar si falla (por ejemplo, si no existe la columna)
+    }
 }
 
 function outputLog() {

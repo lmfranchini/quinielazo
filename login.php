@@ -2,11 +2,14 @@
 require_once 'config.php';
 
 if (currentUser()) {
-    header('Location: index.php');
+    header('Location: fase_final.php');
     exit;
 }
 
 $error = '';
+if (isset($_GET['error']) && $_GET['error'] === 'no_access') {
+    $error = 'Esta cuenta está registrada para el torneo de Fase Final y no tiene acceso a este torneo.';
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
@@ -21,20 +24,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if (!$user) {
-            // Auto-registro
-            $role = (strtolower($username) === 'admin') ? 'ADMIN' : 'USER';
-            $ins = $db->prepare("INSERT INTO `User` (username, password, role, points, createdAt, updatedAt) VALUES (?, ?, ?, 0, NOW(), NOW())");
-            $ins->execute([$username, $password, $role]);
-            $userId = $db->lastInsertId();
-            $_SESSION['user_id'] = $userId;
-            header('Location: index.php');
-            exit;
+            if (defined('ALLOW_REGISTRATION') && !ALLOW_REGISTRATION) {
+                $error = 'El registro de nuevos participantes está cerrado. Si ya estás registrado, verifica que tu nombre o apodo esté escrito correctamente.';
+            } else {
+                // Auto-registro
+                $role = (strtolower($username) === 'admin') ? 'ADMIN' : 'USER';
+                $ins = $db->prepare("INSERT INTO `User` (username, password, role, points, createdAt, updatedAt) VALUES (?, ?, ?, 0, NOW(), NOW())");
+                $ins->execute([$username, $password, $role]);
+                $userId = $db->lastInsertId();
+                $_SESSION['user_id'] = $userId;
+                header('Location: fase_final.php');
+                exit;
+            }
         } else {
             if ($user['password'] !== $password) {
                 $error = 'Contraseña incorrecta.';
+            } elseif (isset($user['origin']) && $user['origin'] === 'FASE_FINAL') {
+                $error = 'Esta cuenta está registrada para el torneo de Fase Final y no tiene acceso a este torneo.';
             } else {
                 $_SESSION['user_id'] = $user['id'];
-                header('Location: index.php');
+                header('Location: fase_final.php');
                 exit;
             }
         }
@@ -49,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <title>Iniciar Sesión – Quiniela Mundial 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.32" />
+  <link rel="stylesheet" href="css/style.css?v=<?= @filemtime(__DIR__ . '/css/style.css') ?: '3.40' ?>" />
 </head>
 <body>
   <div class="login-page fade-in">
@@ -78,7 +87,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </form>
 
       <p class="login-note">
-        Si es la primera vez, escribe tu nombre y una contraseña para registrarte automáticamente.
+        <?php if (defined('ALLOW_REGISTRATION') && !ALLOW_REGISTRATION): ?>
+          El registro de nuevos participantes está cerrado. Ingresa con tu usuario y contraseña.
+        <?php else: ?>
+          Si es la primera vez, escribe tu nombre y una contraseña para registrarte automáticamente.
+        <?php endif; ?>
       </p>
     </div>
   </div>

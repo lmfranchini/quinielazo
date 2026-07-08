@@ -32,6 +32,7 @@ define('DB_NAME', 'TU_NOMBRE_DE_BD');
 define('DB_USER', 'TU_USUARIO_DE_BD');
 define('DB_PASS', 'TU_CONTRASENA_DE_BD');
 define('REGISTRATION_CONTACT_WHATSAPP', 'TU_TELEFONO_AQUI');
+define('ALLOW_REGISTRATION', false);
 
 // ── ESPN API pública (NO necesita registro ni API key) ──
 define('ESPN_BASE', 'https://site.api.espn.com/apis/site/v2/sports/soccer');
@@ -330,10 +331,10 @@ function getGroupStandings($db) {
         'Grupo D' => array('Estados Unidos', 'Paraguay', 'Australia', 'Turquía'),
         'Grupo E' => array('Alemania', 'Curazao', 'Costa de Marfil', 'Ecuador'),
         'Grupo F' => array('Países Bajos', 'Japón', 'Suecia', 'Túnez'),
-        'Grupo G' => array('España', 'Cabo Verde', 'Arabia Saudí', 'Uruguay'),
-        'Grupo H' => array('Bélgica', 'Egipto', 'Irán', 'Nueva Zelanda'),
-        'Grupo I' => array('Argentina', 'Argelia', 'Austria', 'Jordania'),
-        'Grupo J' => array('Francia', 'Senegal', 'Irak', 'Noruega'),
+        'Grupo G' => array('Bélgica', 'Egipto', 'Irán', 'Nueva Zelanda'),
+        'Grupo H' => array('España', 'Cabo Verde', 'Arabia Saudí', 'Uruguay'),
+        'Grupo I' => array('Francia', 'Senegal', 'Irak', 'Noruega'),
+        'Grupo J' => array('Argentina', 'Argelia', 'Austria', 'Jordania'),
         'Grupo K' => array('Portugal', 'RD de Congo', 'Uzbekistán', 'Colombia'),
         'Grupo L' => array('Inglaterra', 'Croacia', 'Ghana', 'Panamá')
     );

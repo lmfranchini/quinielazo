@@ -207,5 +207,6 @@ echo json_encode(array(
     'attendance' => $attendance,
     'stats' => $stats,
     'rosters' => $rosters,
-    'substitutions' => $substitutions
+    'substitutions' => $substitutions,
+    'shootout' => json_decode($match['shootoutData'] ?? '[]', true)
 ));

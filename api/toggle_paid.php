@@ -6,6 +6,7 @@ requireAdmin();
 $data = json_decode(file_get_contents('php://input'), true);
 $userId  = (int)($data['userId'] ?? 0);
 $hasPaid = (int)($data['hasPaid'] ?? 0);
+$field   = trim($data['field'] ?? 'hasPaid');
 
 if ($userId <= 0) {
     if (ob_get_length()) {
@@ -16,10 +17,19 @@ if ($userId <= 0) {
     exit;
 }
 
+if ($field !== 'hasPaid' && $field !== 'hasPaidFaseFinal') {
+    if (ob_get_length()) {
+        @ob_end_clean();
+    }
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'error' => 'Columna de pago inválida']);
+    exit;
+}
+
 try {
     $db = getDB();
 
-    $stmt = $db->prepare("UPDATE `User` SET hasPaid = ?, updatedAt = NOW() WHERE id = ?");
+    $stmt = $db->prepare("UPDATE `User` SET $field = ?, updatedAt = NOW() WHERE id = ?");
     $stmt->execute([$hasPaid, $userId]);
 
     if (ob_get_length()) {

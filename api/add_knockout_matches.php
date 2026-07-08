@@ -47,14 +47,14 @@ if ($count > 0) {
         [88, '2D', '2G', '2026-07-03 22:00:00', 'Dallas Stadium'],
 
         // R16 (8vos)
-        [89, 'Ganador 73', 'Ganador 75', '2026-07-04 17:00:00', 'Philadelphia Stadium'],
-        [90, 'Ganador 74', 'Ganador 78', '2026-07-04 21:00:00', 'Houston Stadium'],
-        [91, 'Ganador 76', 'Ganador 77', '2026-07-05 17:00:00', 'New York New Jersey Stadium'],
+        [89, 'Ganador 74', 'Ganador 77', '2026-07-04 17:00:00', 'Philadelphia Stadium'],
+        [90, 'Ganador 73', 'Ganador 75', '2026-07-04 21:00:00', 'Houston Stadium'],
+        [91, 'Ganador 76', 'Ganador 78', '2026-07-05 17:00:00', 'New York New Jersey Stadium'],
         [92, 'Ganador 79', 'Ganador 80', '2026-07-05 21:00:00', 'Estadio Ciudad de México'],
-        [93, 'Ganador 84', 'Ganador 83', '2026-07-06 18:00:00', 'Dallas Stadium'],
-        [94, 'Ganador 82', 'Ganador 81', '2026-07-06 21:00:00', 'Seattle Stadium'],
-        [95, 'Ganador 88', 'Ganador 87', '2026-07-07 18:00:00', 'Atlanta Stadium'],
-        [96, 'Ganador 85', 'Ganador 86', '2026-07-07 21:00:00', 'BC Place Vancouver'],
+        [93, 'Ganador 83', 'Ganador 84', '2026-07-06 18:00:00', 'Dallas Stadium'],
+        [94, 'Ganador 81', 'Ganador 82', '2026-07-06 21:00:00', 'Seattle Stadium'],
+        [95, 'Ganador 86', 'Ganador 88', '2026-07-07 18:00:00', 'Atlanta Stadium'],
+        [96, 'Ganador 85', 'Ganador 87', '2026-07-07 21:00:00', 'BC Place Vancouver'],
 
         // QF (4tos)
         [97, 'Ganador 89', 'Ganador 90', '2026-07-09 18:00:00', 'Boston Stadium'],

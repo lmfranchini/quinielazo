@@ -1944,8 +1944,8 @@ input:disabled + .switch-slider {
 .mobile-fab {
   display: none;
   position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  right: calc(1.5rem + env(safe-area-inset-right));
   background: linear-gradient(135deg, var(--fifa-purple), var(--fifa-magenta));
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1954,7 +1954,7 @@ input:disabled + .switch-slider {
   font-weight: 800;
   font-size: 0.9rem;
   box-shadow: 0 8px 25px rgba(255, 0, 85, 0.4);
-  z-index: 999;
+  z-index: 99999;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
@@ -1962,6 +1962,8 @@ input:disabled + .switch-slider {
   transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .mobile-fab:active {
   transform: scale(0.95);
@@ -2018,10 +2020,10 @@ input:disabled + .switch-slider {
   position: relative;
   display: flex;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: 1rem;
   padding: 1.5rem 0.5rem;
   width: 100%;
-  min-width: 1450px;
+  min-width: 1200px;
 }
 
 .bracket-column {
@@ -2030,7 +2032,7 @@ input:disabled + .switch-slider {
   justify-content: space-around;
   height: 980px;
   flex: 1;
-  min-width: 160px;
+  min-width: 120px;
   position: relative;
 }
 
@@ -2053,7 +2055,7 @@ input:disabled + .switch-slider {
   backdrop-filter: blur(8px);
   border: 1px solid var(--panel-border);
   border-radius: 12px;
-  padding: 0.65rem 0.8rem;
+  padding: 0.65rem 0.5rem;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -2106,7 +2108,7 @@ input:disabled + .switch-slider {
 .bracket-team-info {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.3rem;
   min-width: 0;
   flex: 1;
 }
@@ -2229,5 +2231,143 @@ input:disabled + .switch-slider {
 }
 
 /* El árbol se mantiene en vista PC siempre para permitir zoom/scroll manual */
+
+/* ── Overrides for Phase Final (Full Width Bracket & Drawer) ── */
+.page-fase-final .main-container {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2.5rem;
+  align-items: start;
+  transition: all 0.3s ease;
+}
+
+.page-fase-final .main-container.sidebar-hidden {
+  grid-template-columns: 1fr;
+  max-width: 100%;
+}
+
+.page-fase-final .main-container.sidebar-hidden aside {
+  display: none;
+}
+
+@media (max-width: 1000px) {
+  .page-fase-final .main-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Flag sizes adjustments (predictions cards default back to group stage size as requested) */
+
+/* Bracket Specific Flag size */
+.page-fase-final .bracket-team-flag {
+  width: 18px;
+  height: 12px;
+  border-radius: 2px;
+}
+.page-fase-final .bracket-team-flag-placeholder {
+  width: 18px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+/* Bracket SVG Connecting Lines */
+.bracket-svg-path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.3s ease, stroke-width 0.3s ease, filter 0.3s ease;
+}
+
+.bracket-svg-path.active {
+  stroke: var(--accent-color);
+  stroke-width: 3px;
+  filter: drop-shadow(0 0 6px var(--accent-color)) drop-shadow(0 0 2px var(--accent-color));
+  animation: neonPathPulse 2s infinite alternate ease-in-out;
+}
+
+@keyframes neonPathPulse {
+  0% {
+    filter: drop-shadow(0 0 3px var(--accent-color)) drop-shadow(0 0 1px var(--accent-color));
+    stroke-width: 2.5px;
+  }
+  100% {
+    filter: drop-shadow(0 0 8px var(--accent-color)) drop-shadow(0 0 4px var(--accent-color));
+    stroke-width: 3.5px;
+  }
+}
+
+/* Bracket Match Card Premium styling */
+.page-fase-final .bracket-match-card {
+  background: rgba(13, 17, 28, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.page-fase-final .bracket-match-card:hover {
+  border-color: rgba(0, 240, 255, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 240, 255, 0.15);
+}
+
+.page-fase-final .bracket-match-card--live {
+  border-color: rgba(255, 0, 85, 0.7);
+  box-shadow: 0 0 15px rgba(255, 0, 85, 0.25), 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Live Forecast styling */
+.match-likely-scores {
+  margin-top: 0.8rem;
+  padding: 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.likely-scores-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: #8e8e93;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.4rem;
+}
+.likely-score-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+.likely-score-row:last-child {
+  border-bottom: none;
+}
+.likely-score-rank {
+  color: #8e8e93;
+  font-weight: 500;
+}
+.likely-score-val {
+  font-weight: 700;
+  color: #fff;
+}
+.likely-score-prob {
+  font-weight: 600;
+  color: var(--fifa-cyan, #00e5ff);
+}
+.live-status-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #ff5c00;
+}
+.live-status-label.error {
+  color: #ff3b30;
+}
+
+
 
 

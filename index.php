@@ -2,6 +2,12 @@
 require_once 'config.php';
 $user = requireLogin();
 
+// Redirigir por defecto a la fase final
+if (!isset($_GET['explicit']) && !isset($_GET['view'])) {
+    header('Location: fase_final.php');
+    exit;
+}
+
 $db = getDB();
 
 // Obtener todos los partidos ordenados por fecha (solo Fase de Grupos)
@@ -159,7 +165,7 @@ $totalPrizePool = $paidCount * 500;
   <meta name="description" content="Quiniela del Mundial de Fútbol 2026 – Compite con tus amigos." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.32" />
+  <link rel="stylesheet" href="css/style.css?v=<?= @filemtime(__DIR__ . '/css/style.css') ?: '3.40' ?>" />
   <!-- Chart.js para el gráfico de posiciones -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -443,7 +449,11 @@ $totalPrizePool = $paidCount * 500;
                     </div>
                   </div>
                   <!-- Probabilidades de triunfo (Odds API via N8N) -->
-                  <?php if ($match['status'] === 'SCHEDULED' && is_numeric($match['probHome']) && is_numeric($match['probDraw']) && is_numeric($match['probAway'])): ?>
+                  <?php
+                    $teamsAreKnown = !preg_match('/^(Ganador|Perdedor)\s+\d+$/', $match['teamA'])
+                                  && !preg_match('/^(Ganador|Perdedor)\s+\d+$/', $match['teamB']);
+                  ?>
+                  <?php if ($match['status'] === 'SCHEDULED' && $teamsAreKnown && is_numeric($match['probHome']) && is_numeric($match['probDraw']) && is_numeric($match['probAway'])): ?>
                     <div class="match-probabilities" id="prob-container-<?= $match['id'] ?>">
                       <div class="prob-header">Probabilidades de triunfo</div>
                       <div class="prob-labels">
@@ -460,6 +470,7 @@ $totalPrizePool = $paidCount * 500;
                   <?php else: ?>
                     <div class="match-probabilities" id="prob-container-<?= $match['id'] ?>" style="display:none"></div>
                   <?php endif; ?>
+                  <div class="match-likely-scores" id="likely-scores-container-<?= $match['id'] ?>" style="display:none"></div>
 
                   <!-- Área de pronóstico -->
                   <div class="prediction-area">
@@ -539,6 +550,33 @@ $totalPrizePool = $paidCount * 500;
                                value="<?= $pred ? $pred['scoreB'] : '' ?>"
                                placeholder="–" />
                       </div>
+                      <?php
+                        $teamAIsPlaceholder = preg_match('/^(Ganador|Perdedor)\s+\d+$/', $match['teamA']);
+                        $teamBIsPlaceholder = preg_match('/^(Ganador|Perdedor)\s+\d+$/', $match['teamB']);
+                        if ($teamAIsPlaceholder || $teamBIsPlaceholder):
+                      ?>
+                      <div class="prediction-warning" style="
+                        background: rgba(255,165,0,0.12);
+                        border: 1px solid rgba(255,165,0,0.4);
+                        border-radius: 8px;
+                        padding: 0.45rem 0.65rem;
+                        margin: 0.4rem 0 0.1rem;
+                        font-size: 0.72rem;
+                        color: #ffb347;
+                        text-align: center;
+                        line-height: 1.35;
+                      ">
+                        ⚠️ <?php
+                          if ($teamAIsPlaceholder && $teamBIsPlaceholder)
+                            echo 'Ambos equipos aún no están definidos.';
+                          elseif ($teamAIsPlaceholder)
+                            echo "El equipo local aún no está definido ({$match['teamA']}).";
+                          else
+                            echo "El equipo visitante aún no está definido ({$match['teamB']}).";
+                        ?>
+                        <br>Podrás actualizar tu pronóstico cuando se conozcan.
+                      </div>
+                      <?php endif; ?>
                       <button class="btn-save" data-match-id="<?= $match['id'] ?>">
                         <?= $pred ? 'Actualizar Pronóstico' : 'Guardar Pronóstico' ?>
                       </button>
@@ -1047,6 +1085,20 @@ $totalPrizePool = $paidCount * 500;
         fab.dataset.action = 'leaderboard';
       }
     });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const fab = document.getElementById('mobile-fab');
+      if (fab) {
+        fab.addEventListener('click', function(e) {
+          e.preventDefault();
+          handleFabClick();
+        });
+        fab.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+          handleFabClick();
+        }, { passive: false });
+      }
+    });
   </script>
   <!-- Modal de Detalles del Partido (Live Stats & Lineups) -->
   <div id="match-details-modal" class="modal">
@@ -1138,10 +1190,10 @@ $totalPrizePool = $paidCount * 500;
   </div>
 
   <!-- Botón Flotante para Móviles -->
-  <button id="mobile-fab" class="mobile-fab" data-action="leaderboard" onclick="handleFabClick()">
+  <button id="mobile-fab" class="mobile-fab" data-action="leaderboard">
     🏆 Tabla
   </button>
 
-  <script src="js/app.js?v=3.32"></script>
+  <script src="js/app.js?v=<?= @filemtime(__DIR__ . '/js/app.js') ?: '3.40' ?>"></script>
 </body>
 </html>

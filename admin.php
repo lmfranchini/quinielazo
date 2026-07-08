@@ -31,38 +31,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Auto-calcular llaves de fase final (Grupos -> 16vos)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'autocalc') {
-    function backtrackAssignment($index, $thirds, $slotIds, $slots, &$assigned) {
-        if ($index >= count($slotIds)) {
-            return true;
+    function assignThirdPlaces($qualifiedThirds) {
+        $combinations = require 'fifa_combinations.php';
+        
+        $letters = [];
+        foreach ($qualifiedThirds as $t) {
+            $letters[] = $t['groupLetter'];
         }
-        $matchId = $slotIds[$index];
-        $allowedGroups = $slots[$matchId]['groups'];
-        foreach ($thirds as $third) {
-            if (in_array($third['name'], $assigned)) {
-                continue;
-            }
-            if (in_array($third['groupLetter'], $allowedGroups)) {
-                $assigned[$matchId] = $third['name'];
-                if (backtrackAssignment($index + 1, $thirds, $slotIds, $slots, $assigned)) {
-                    return true;
+        sort($letters);
+        $key = implode(',', $letters);
+        
+        $assigned = [];
+        if (isset($combinations[$key])) {
+            $matchups = $combinations[$key];
+            
+            $mapping = [
+                79 => 0, // 1A
+                85 => 1, // 1B
+                81 => 2, // 1D
+                74 => 3, // 1E
+                82 => 4, // 1G
+                77 => 5, // 1I
+                87 => 6, // 1K
+                80 => 7  // 1L
+            ];
+            
+            foreach ($mapping as $matchId => $idx) {
+                if (isset($matchups[$idx])) {
+                    $targetGroupLetter = substr($matchups[$idx], 1);
+                    foreach ($qualifiedThirds as $t) {
+                        if ($t['groupLetter'] === $targetGroupLetter) {
+                            $assigned[$matchId] = $t['name'];
+                            break;
+                        }
+                    }
                 }
-                unset($assigned[$matchId]);
-            }
-        }
-        return false;
-    }
-
-    function assignThirdPlaces($qualifiedThirds, $slots) {
-        $slotIds = array_keys($slots);
-        $assigned = [];
-        if (backtrackAssignment(0, $qualifiedThirds, $slotIds, $slots, $assigned)) {
-            return $assigned;
-        }
-        // Fallback simple por si falla el backtracking
-        $assigned = [];
-        foreach ($slotIds as $idx => $matchId) {
-            if (isset($qualifiedThirds[$idx])) {
-                $assigned[$matchId] = $qualifiedThirds[$idx]['name'];
             }
         }
         return $assigned;
@@ -118,27 +121,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             87 => ['teamA' => '1K', 'teamB' => '3D/E/I/J/L'],
             88 => ['teamA' => '2D', 'teamB' => '2G'],
             
-            // R16
-            89 => ['teamA' => 'Ganador 73', 'teamB' => 'Ganador 75'],
-            90 => ['teamA' => 'Ganador 74', 'teamB' => 'Ganador 78'],
-            91 => ['teamA' => 'Ganador 76', 'teamB' => 'Ganador 77'],
+            // 8vos (Round of 16)
+            89 => ['teamA' => 'Ganador 74', 'teamB' => 'Ganador 77'],
+            90 => ['teamA' => 'Ganador 73', 'teamB' => 'Ganador 75'],
+            91 => ['teamA' => 'Ganador 76', 'teamB' => 'Ganador 78'],
             92 => ['teamA' => 'Ganador 79', 'teamB' => 'Ganador 80'],
-            93 => ['teamA' => 'Ganador 84', 'teamB' => 'Ganador 83'],
-            94 => ['teamA' => 'Ganador 82', 'teamB' => 'Ganador 81'],
-            95 => ['teamA' => 'Ganador 88', 'teamB' => 'Ganador 87'],
-            96 => ['teamA' => 'Ganador 85', 'teamB' => 'Ganador 86'],
+            93 => ['teamA' => 'Ganador 83', 'teamB' => 'Ganador 84'],
+            94 => ['teamA' => 'Ganador 81', 'teamB' => 'Ganador 82'],
+            95 => ['teamA' => 'Ganador 86', 'teamB' => 'Ganador 88'],
+            96 => ['teamA' => 'Ganador 85', 'teamB' => 'Ganador 87'],
             
-            // QF
+            // Cuartos (Quarter-finals)
             97 => ['teamA' => 'Ganador 89', 'teamB' => 'Ganador 90'],
             98 => ['teamA' => 'Ganador 93', 'teamB' => 'Ganador 94'],
             99 => ['teamA' => 'Ganador 91', 'teamB' => 'Ganador 92'],
             100 => ['teamA' => 'Ganador 95', 'teamB' => 'Ganador 96'],
             
-            // SF
+            // Semifinales
             101 => ['teamA' => 'Ganador 97', 'teamB' => 'Ganador 98'],
             102 => ['teamA' => 'Ganador 99', 'teamB' => 'Ganador 100'],
             
-            // 3rd Place
+            // Tercer Lugar
             103 => ['teamA' => 'Perdedor 101', 'teamB' => 'Perdedor 102'],
             
             // Final
@@ -172,17 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         });
         $qualifiedThirds = array_slice($thirdPlaces, 0, 8);
 
-        $slots = [
-            74 => ['groups' => ['A', 'B', 'C', 'D', 'F']],
-            77 => ['groups' => ['C', 'D', 'F', 'G', 'H']],
-            79 => ['groups' => ['C', 'E', 'F', 'H', 'I']],
-            80 => ['groups' => ['E', 'H', 'I', 'J', 'K']],
-            81 => ['groups' => ['B', 'E', 'F', 'I', 'J']],
-            82 => ['groups' => ['A', 'E', 'H', 'I', 'J']],
-            85 => ['groups' => ['E', 'F', 'G', 'I', 'J']],
-            87 => ['groups' => ['D', 'E', 'I', 'J', 'L']],
-        ];
-        $assignedThirds = assignThirdPlaces($qualifiedThirds, $slots);
+        $assignedThirds = assignThirdPlaces($qualifiedThirds);
 
         $updatedCount = 0;
         foreach ($originalKnockoutPlaceholders as $matchId => $p) {
@@ -206,8 +199,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Obtener partidos de fase de grupos únicamente
 $matches = $db->query("SELECT * FROM `Match` WHERE id < 73 ORDER BY date ASC")->fetchAll();
-// Obtener usuarios ordenados
-$users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role != 'ADMIN' ORDER BY username ASC")->fetchAll();
+// Obtener usuarios ordenados - Quiniela Principal
+$usersMain = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role != 'ADMIN' AND origin = 'MAIN' ORDER BY username ASC")->fetchAll();
+// Obtener usuarios ordenados - Quiniela Fase Final
+$usersFF = $db->query("SELECT id, username, pointsFaseFinal, hasPaidFaseFinal FROM `User` WHERE role != 'ADMIN' AND hasJoinedFaseFinal = 1 ORDER BY username ASC")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -217,7 +212,7 @@ $users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role
   <title>Admin – Quiniela Mundial 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=3.32" />
+  <link rel="stylesheet" href="css/style.css?v=<?= @filemtime(__DIR__ . '/css/style.css') ?: '3.40' ?>" />
 </head>
 <body class="fade-in">
 
@@ -322,7 +317,11 @@ $users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role
         </p>
         <div class="admin-match-list">
           <?php 
-          $ffMatchesForAdmin = $db->query("SELECT * FROM `Match` WHERE id >= 73 ORDER BY id ASC")->fetchAll();
+          $ffMatchesForAdmin = $db->query("SELECT * FROM `Match` WHERE id >= 73 ORDER BY date ASC, id ASC")->fetchAll();
+          $ffDisplayMap = [];
+          foreach ($ffMatchesForAdmin as $index => $m) {
+              $ffDisplayMap[$m['id']] = 73 + $index;
+          }
           $hasAnyFf = false;
           foreach ($ffMatchesForAdmin as $m):
             $hasAnyFf = true;
@@ -336,7 +335,7 @@ $users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role
             <div class="admin-match-item" id="match-item-<?= $m['id'] ?>">
               <div style="flex:1; min-width: 250px;">
                 <div class="admin-match-name">
-                  <span>M#<?= $m['id'] ?>:</span> 
+                  <span>M#<?= $ffDisplayMap[$m['id']] ?>:</span> 
                   <?= htmlspecialchars($teamNameA) ?> vs <?= htmlspecialchars($teamNameB) ?>
                 </div>
                 <div class="admin-match-date"><?= $day ?> · <?= $time ?></div>
@@ -381,31 +380,67 @@ $users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role
     <div class="glass-panel" style="margin-top:2rem">
       <h2 class="admin-section-title">👥 Gestionar Participantes y Pagos</h2>
       <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:1.5rem">
-        Marca a los participantes que aportaron dinero a la bolsa de premios ($500 pesos).
-        Los participantes marcados tendrán un signo de <strong>$ dorado</strong> en la clasificación general.
+        Marca a los participantes que aportaron dinero a la bolsa de premios ($500 pesos) en cada uno de los torneos correspondientes.
       </p>
 
-      <div class="admin-users-list">
-        <?php foreach ($users as $u): ?>
-          <div class="admin-user-item">
-            <div class="admin-user-info">
-              <span class="admin-user-name"><?= htmlspecialchars($u['username']) ?></span>
-              <span class="admin-user-pts"><?= $u['points'] ?> pts</span>
-            </div>
-            <div class="admin-user-actions">
-              <label class="switch-container">
-                <input type="checkbox" class="toggle-paid-checkbox" data-user-id="<?= $u['id'] ?>" <?= $u['hasPaid'] ? 'checked' : '' ?> />
-                <span class="switch-slider"></span>
-              </label>
-              <span class="paid-status-label" id="status-label-<?= $u['id'] ?>" style="color: <?= $u['hasPaid'] ? 'var(--accent-color)' : 'var(--text-secondary)' ?>; font-size: 0.8rem; font-weight: 700; margin-left: 0.5rem; width: 65px; display: inline-block;">
-                <?= $u['hasPaid'] ? 'Pagado' : 'Sin Pago' ?>
-              </span>
-            </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 1rem;">
+        <!-- Torneo Principal -->
+        <div>
+          <h3 style="color: var(--fifa-purple); font-size: 1.1rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.5rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            ⚽ Quiniela Principal (Grupos)
+          </h3>
+          <div class="admin-users-list">
+            <?php foreach ($usersMain as $u): ?>
+              <div class="admin-user-item">
+                <div class="admin-user-info">
+                  <span class="admin-user-name"><?= htmlspecialchars($u['username']) ?></span>
+                  <span class="admin-user-pts"><?= $u['points'] ?> pts</span>
+                </div>
+                <div class="admin-user-actions">
+                  <label class="switch-container">
+                    <input type="checkbox" class="toggle-paid-checkbox" data-user-id="<?= $u['id'] ?>" data-field="hasPaid" <?= $u['hasPaid'] ? 'checked' : '' ?> />
+                    <span class="switch-slider"></span>
+                  </label>
+                  <span class="paid-status-label" id="status-label-main-<?= $u['id'] ?>" style="color: <?= $u['hasPaid'] ? 'var(--accent-color)' : 'var(--text-secondary)' ?>; font-size: 0.8rem; font-weight: 700; margin-left: 0.5rem; width: 65px; display: inline-block;">
+                    <?= $u['hasPaid'] ? 'Pagado' : 'Sin Pago' ?>
+                  </span>
+                </div>
+              </div>
+            <?php endforeach; ?>
+            <?php if (empty($usersMain)): ?>
+              <p style="color:var(--text-secondary); text-align:center">No hay participantes registrados.</p>
+            <?php endif; ?>
           </div>
-        <?php endforeach; ?>
-        <?php if (empty($users)): ?>
-          <p style="color:var(--text-secondary); text-align:center">No hay participantes registrados.</p>
-        <?php endif; ?>
+        </div>
+
+        <!-- Torneo Fase Final -->
+        <div>
+          <h3 style="color: var(--fifa-cyan); font-size: 1.1rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.5rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            🏆 Quiniela Fase Final
+          </h3>
+          <div class="admin-users-list">
+            <?php foreach ($usersFF as $u): ?>
+              <div class="admin-user-item">
+                <div class="admin-user-info">
+                  <span class="admin-user-name"><?= htmlspecialchars($u['username']) ?></span>
+                  <span class="admin-user-pts"><?= $u['pointsFaseFinal'] ?> pts</span>
+                </div>
+                <div class="admin-user-actions">
+                  <label class="switch-container">
+                    <input type="checkbox" class="toggle-paid-checkbox" data-user-id="<?= $u['id'] ?>" data-field="hasPaidFaseFinal" <?= $u['hasPaidFaseFinal'] ? 'checked' : '' ?> />
+                    <span class="switch-slider"></span>
+                  </label>
+                  <span class="paid-status-label" id="status-label-ff-<?= $u['id'] ?>" style="color: <?= $u['hasPaidFaseFinal'] ? 'var(--accent-color)' : 'var(--text-secondary)' ?>; font-size: 0.8rem; font-weight: 700; margin-left: 0.5rem; width: 65px; display: inline-block;">
+                    <?= $u['hasPaidFaseFinal'] ? 'Pagado' : 'Sin Pago' ?>
+                  </span>
+                </div>
+              </div>
+            <?php endforeach; ?>
+            <?php if (empty($usersFF)): ?>
+              <p style="color:var(--text-secondary); text-align:center; padding: 1rem 0;">Ningún participante se ha firmado en la quiniela nueva.</p>
+            <?php endif; ?>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -610,8 +645,10 @@ $users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role
     document.querySelectorAll('.toggle-paid-checkbox').forEach(chk => {
       chk.addEventListener('change', async () => {
         const userId = chk.dataset.userId;
+        const field = chk.dataset.field || 'hasPaid';
+        const labelPrefix = (field === 'hasPaid') ? 'main-' : 'ff-';
         const hasPaid = chk.checked ? 1 : 0;
-        const statusLabel = document.getElementById(`status-label-${userId}`);
+        const statusLabel = document.getElementById(`status-label-${labelPrefix}${userId}`);
         
         chk.disabled = true;
         if (statusLabel) {
@@ -623,7 +660,7 @@ $users = $db->query("SELECT id, username, points, hasPaid FROM `User` WHERE role
           const res = await fetch('api/toggle_paid.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: parseInt(userId), hasPaid: hasPaid })
+            body: JSON.stringify({ userId: parseInt(userId), hasPaid: hasPaid, field: field })
           });
           const data = await res.json();
 
