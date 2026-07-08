@@ -12,10 +12,38 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# App credentials
+# App credentials (in any subfolder)
+**/config.php
 config.php
 
 # Local user session files
+**/sessions/
 sessions/
+
+# Temporary and local scratch scripts at root level
+/*.js
+/*.php
+/scratch/
+/.agents/
+/.gemini/
+/node_modules/
+package.json
+package-lock.json
+
+# Backups and copias
+/* - copia/
+/quiniela-php - copia/
+
+# Zip packages
+*.zip
+*.tar.gz
+*.rar
+
+# Next.js app
+/quiniela-app/
+
+# Logs
+*.log
+*log.txt
 
 

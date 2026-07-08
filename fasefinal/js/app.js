@@ -1,0 +1,1894 @@
+// ── Guardar pronóstico vía AJAX ──
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.btn-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const card = btn.closest('.match-card');
+      const matchId = btn.dataset.matchId;
+      const scoreA = card.querySelector('.input-a').value;
+      const scoreB = card.querySelector('.input-b').value;
+      const statusEl = card.querySelector('.save-status');
+
+      if (scoreA === '' || scoreB === '') {
+        statusEl.style.color = '#ff6b9d';
+        statusEl.textContent = 'Ingresa ambos marcadores';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+      statusEl.textContent = '';
+
+      try {
+        const res = await fetch('api/save_prediction.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ matchId: parseInt(matchId), scoreA: parseInt(scoreA), scoreB: parseInt(scoreB) })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          statusEl.style.color = 'var(--accent-color)';
+          statusEl.textContent = '✅ Guardado';
+          btn.textContent = 'Actualizar Pronóstico';
+        } else {
+          statusEl.style.color = '#ff6b9d';
+          statusEl.textContent = '❌ ' + (data.error || 'Error al guardar');
+          btn.textContent = 'Guardar Pronóstico';
+        }
+      } catch (e) {
+        statusEl.style.color = '#ff6b9d';
+        statusEl.textContent = '❌ Error de conexión';
+        btn.textContent = 'Guardar Pronóstico';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // ── Polling de datos en vivo ──
+  initLivePolling();
+
+  // Poblar espectáculos estáticos si los hay al cargar la página
+  document.querySelectorAll('.halftime-show').forEach(el => {
+    populateHalftimeShow(el, false);
+  });
+
+  // Manejo de tab por URL o auto-scroll
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get('tab');
+  if (tabParam && typeof switchFfTab === 'function') {
+    switchFfTab(tabParam);
+  } else if (!window.location.hash) {
+    const scrollTarget = document.getElementById('scroll-target');
+    if (scrollTarget) {
+      setTimeout(() => {
+        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+    }
+  }
+});
+
+// ── Sistema de actualización en vivo ──
+let pollInterval = null;
+let lastLiveForecastFetch = {};
+let pollSpeed = 30000; // 30 segundos por defecto
+
+function initLivePolling() {
+  // Siempre iniciar el polling (cada 60s normal, cada 20s si hay partidos en vivo)
+  if (window.HAS_LIVE) {
+    pollSpeed = 20000; // 20 segundos cuando hay partidos en vivo
+  } else {
+    pollSpeed = 60000; // 60 segundos cuando no hay en vivo
+  }
+
+  // Primera consulta después de 500ms para carga inmediata
+  setTimeout(fetchLiveData, 500);
+  pollInterval = setInterval(fetchLiveData, pollSpeed);
+}
+
+async function fetchLiveData() {
+  try {
+    const res = await fetch('api/live_data.php?t=' + Date.now());
+    const data = await res.json();
+    if (data.error) return;
+
+    try {
+      updateMatches(data.matches);
+    } catch (e) {
+      console.error('Error updating matches:', e);
+    }
+
+    try {
+      updateLeaderboard(data.leaderboard);
+    } catch (e) {
+      console.error('Error updating leaderboard:', e);
+    }
+
+    if (data.standings) {
+      try {
+        updateStandings(data.standings);
+      } catch (e) {
+        console.error('Error updating standings:', e);
+      }
+    }
+
+    if (data.topScorers) {
+      try {
+        updateTopScorers(data.topScorers);
+      } catch (e) {
+        console.error('Error updating top scorers:', e);
+      }
+    }
+
+    if (data.topCards) {
+      try {
+        updateTopCards(data.topCards);
+      } catch (e) {
+        console.error('Error updating top cards:', e);
+      }
+    }
+
+    if (data.tStats) {
+      try {
+        updateTournamentStats(data.tStats);
+      } catch (e) {
+        console.error('Error updating tournament stats:', e);
+      }
+    }
+
+    // Ajustar velocidad de polling
+    if (data.hasLive && pollSpeed !== 20000) {
+      clearInterval(pollInterval);
+      pollSpeed = 20000;
+      pollInterval = setInterval(fetchLiveData, pollSpeed);
+    } else if (!data.hasLive && pollSpeed !== 60000) {
+      clearInterval(pollInterval);
+      pollSpeed = 60000;
+      pollInterval = setInterval(fetchLiveData, pollSpeed);
+    }
+  } catch (e) {
+    // Silenciar errores de red
+  }
+}
+
+function updateMatches(matches) {
+  matches.forEach(m => {
+    try {
+      // Actualizar tarjetas compactas del árbol (bracket) si están presentes en la página
+      const bracketCard = document.querySelector(`.bracket-match-card[data-match-id="${m.id}"]`);
+      if (bracketCard) {
+        const bScoreAEl = bracketCard.querySelector(`#scoreA-${m.id}`);
+        const bScoreBEl = bracketCard.querySelector(`#scoreB-${m.id}`);
+        if (bScoreAEl && bScoreBEl) {
+          let newA = m.scoreA !== null ? m.scoreA : '–';
+          if (m.shootoutA != null) newA = `(${m.shootoutA}) ${newA}`;
+          
+          let newB = m.scoreB !== null ? m.scoreB : '–';
+          if (m.shootoutB != null) newB = `(${m.shootoutB}) ${newB}`;
+          if (bScoreAEl.textContent !== String(newA)) {
+            bScoreAEl.textContent = newA;
+          }
+          if (bScoreBEl.textContent !== String(newB)) {
+            bScoreBEl.textContent = newB;
+          }
+        }
+        
+        // Actualizar nombres y banderas en el árbol (bracket)
+        const rows = bracketCard.querySelectorAll('.bracket-team-row');
+        if (rows.length === 2) {
+          const resolvedA = resolvePlaceholder(m.teamA, matches);
+          updateBracketTeamRow(rows[0], resolvedA, m.winner);
+          
+          const resolvedB = resolvePlaceholder(m.teamB, matches);
+          updateBracketTeamRow(rows[1], resolvedB, m.winner);
+        }
+        
+        if (m.status === 'LIVE' || m.status === 'HALFTIME') {
+          bracketCard.classList.add('bracket-match-card--live');
+          let liveTag = bracketCard.querySelector('.bracket-match-live-tag');
+          if (!liveTag) {
+            const numEl = bracketCard.querySelector('.bracket-match-number');
+            if (numEl) {
+              liveTag = document.createElement('span');
+              liveTag.className = 'bracket-match-live-tag';
+              liveTag.textContent = 'LIVE';
+              numEl.appendChild(liveTag);
+            }
+          }
+        } else {
+          bracketCard.classList.remove('bracket-match-card--live');
+          const liveTag = bracketCard.querySelector('.bracket-match-live-tag');
+          if (liveTag) liveTag.remove();
+        }
+      }
+
+      const card = document.querySelector(`.match-card[data-match-id="${m.id}"]`);
+      if (!card) return;
+
+      // Actualizar marcador en vivo
+      const scoreAEl = document.getElementById(`scoreA-${m.id}`);
+      const scoreBEl = document.getElementById(`scoreB-${m.id}`);
+
+      if (m.status === 'LIVE' || m.status === 'HALFTIME' || m.isFinished) {
+        if (scoreAEl && scoreBEl) {
+          const oldA = parseInt(scoreAEl.textContent);
+          const oldB = parseInt(scoreBEl.textContent);
+          let newA = m.scoreA ?? 0;
+          if (m.shootoutA != null) newA = `(${m.shootoutA}) ${newA}`;
+          
+          let newB = m.scoreB ?? 0;
+          if (m.shootoutB != null) newB = `(${m.shootoutB}) ${newB}`;
+
+          if (oldA !== newA && scoreAEl.textContent !== String(newA)) {
+            scoreAEl.textContent = newA;
+            scoreAEl.classList.add('score-changed');
+            setTimeout(() => scoreAEl.classList.remove('score-changed'), 2000);
+          }
+          if (oldB !== newB && scoreBEl.textContent !== String(newB)) {
+            scoreBEl.textContent = newB;
+            scoreBEl.classList.add('score-changed');
+            setTimeout(() => scoreBEl.classList.remove('score-changed'), 2000);
+          }
+        }
+
+        // Actualizar minuto, estado y badges de en vivo
+        let liveInd = card.querySelector('.live-indicator');
+        if (m.status === 'LIVE') {
+          if (!liveInd) {
+            liveInd = document.createElement('div');
+            liveInd.className = 'live-indicator';
+            card.insertBefore(liveInd, card.querySelector('.match-header'));
+          } else {
+            liveInd.className = 'live-indicator';
+          }
+          liveInd.innerHTML = `<span class="live-dot"></span><span>EN VIVO ${m.minute ? "· " + m.minute + "'" : ''}</span>`;
+        } else if (m.status === 'HALFTIME') {
+          if (!liveInd) {
+            liveInd = document.createElement('div');
+            liveInd.className = 'live-indicator live-indicator--ht';
+            card.insertBefore(liveInd, card.querySelector('.match-header'));
+          } else {
+            liveInd.className = 'live-indicator live-indicator--ht';
+          }
+          liveInd.innerHTML = '<span>MEDIO TIEMPO</span>';
+        } else {
+          if (liveInd) {
+            liveInd.remove();
+          }
+        }
+
+        // Actualizar la parte central de estado (Minuto / VS / FINAL)
+        const centerStatus = card.querySelector('.match-center-status');
+        if (centerStatus) {
+          if (m.status === 'LIVE') {
+            const minText = m.minute ? `Min ${m.minute}'` : 'EN VIVO';
+            centerStatus.innerHTML = `
+              <div class="live-dot" style="margin-bottom:0.2rem"></div>
+              <div class="match-time-live" id="minute-${m.id}">${minText}</div>
+            `;
+          } else if (m.status === 'HALFTIME') {
+            centerStatus.innerHTML = `<div class="match-time-ht">MEDIO TIEMPO</div>`;
+          } else if (m.isFinished || m.status === 'FINISHED') {
+            centerStatus.innerHTML = `<div class="match-time-final">FINAL</div>`;
+          } else {
+            centerStatus.innerHTML = `<div class="vs">VS</div>`;
+          }
+        }
+
+        // Show de medio tiempo dinámico
+        let htShow = card.querySelector('.halftime-show');
+        if (m.status === 'HALFTIME') {
+          if (!htShow) {
+            htShow = document.createElement('div');
+            htShow.className = 'halftime-show';
+            card.appendChild(htShow);
+            populateHalftimeShow(htShow);
+          }
+        } else {
+          if (htShow) {
+            htShow.remove();
+          }
+        }
+
+        // Actualizar goleadores en tiempo real (seguro contra campos vacíos/indefinidos)
+        const teams = card.querySelectorAll('.team');
+        const scorersAEl = teams[0] ? teams[0].querySelector('.team-scorers') : null;
+        const scorersBEl = teams[1] ? teams[1].querySelector('.team-scorers') : null;
+        if (scorersAEl && scorersBEl) {
+          const scorersA = (m.scorers && m.scorers.teamA) || [];
+          const scorersB = (m.scorers && m.scorers.teamB) || [];
+          scorersAEl.innerHTML = scorersA.map(sc => `<div class="scorer-item"><span class="event-icon">⚽</span>${escapeHtml(sc)}</div>`).join('');
+          scorersBEl.innerHTML = scorersB.map(sc => `<div class="scorer-item"><span class="event-icon">⚽</span>${escapeHtml(sc)}</div>`).join('');
+        }
+
+        // Actualizar tarjetas en tiempo real (seguro contra campos vacíos/indefinidos/Arrays vacíos)
+        const cardsAEl = document.getElementById(`cardsA-${m.id}`);
+        const cardsBEl = document.getElementById(`cardsB-${m.id}`);
+        if (cardsAEl && cardsBEl) {
+          const yellowsA = (m.cards && m.cards.teamA && m.cards.teamA.yellow) || [];
+          const redsA = (m.cards && m.cards.teamA && m.cards.teamA.red) || [];
+          const yellowsB = (m.cards && m.cards.teamB && m.cards.teamB.yellow) || [];
+          const redsB = (m.cards && m.cards.teamB && m.cards.teamB.red) || [];
+
+          let htmlA = '';
+          yellowsA.forEach(y => htmlA += `<div class="card-item-yellow"><span class="event-icon">🟨</span>${escapeHtml(y)}</div>`);
+          redsA.forEach(r => htmlA += `<div class="card-item-red"><span class="event-icon">🟥</span>${escapeHtml(r)}</div>`);
+          cardsAEl.innerHTML = htmlA;
+
+          let htmlB = '';
+          yellowsB.forEach(y => htmlB += `<div class="card-item-yellow"><span class="event-icon">🟨</span>${escapeHtml(y)}</div>`);
+          redsB.forEach(r => htmlB += `<div class="card-item-red"><span class="event-icon">🟥</span>${escapeHtml(r)}</div>`);
+          cardsBEl.innerHTML = htmlB;
+        }
+
+        // Actualizar puntos proyectados
+        const projEl = document.getElementById(`projPts-${m.id}`);
+        if (projEl) {
+          const cls = m.projectedPts === 6 ? 'pts-exact' : (m.projectedPts === 3 ? 'pts-result' : 'pts-miss');
+          projEl.className = `pred-points-live ${cls}`;
+          const text = m.projectedPts === 6 ? '🎯 +6 pts' : (m.projectedPts === 3 ? '✓ +3 pts' : '✗ 0 pts');
+          projEl.innerHTML = `${text} <span class="pts-live-tag">en vivo</span>`;
+        }
+      }
+
+      // Actualizar probabilidades y marcadores probables
+      const probContainer = document.getElementById(`prob-container-${m.id}`);
+      const scoreContainer = document.getElementById(`likely-scores-container-${m.id}`);
+      
+      const isLive = (m.status === 'LIVE' || m.status === 'HALFTIME' || m.status === 'IN_PLAY' || m.status === '1T' || m.status === '2T' || m.status === 'HT' || m.status === '90+');
+      
+      if (isLive) {
+        const minute = parseInt(m.matchMinute) || 0;
+        const interval = minute >= 85 ? 60000 : 180000;
+        const lastFetch = lastLiveForecastFetch[m.id] || 0;
+        
+        if (Date.now() - lastFetch >= interval) {
+          lastLiveForecastFetch[m.id] = Date.now();
+          updateLiveForecast(m);
+        }
+      } else {
+        if (scoreContainer) {
+          scoreContainer.style.display = 'none';
+        }
+        
+        if (probContainer) {
+          const teamsAreKnown = !/^(Ganador|Perdedor)\s+\d+$/i.test(m.teamA || '')
+                             && !/^(Ganador|Perdedor)\s+\d+$/i.test(m.teamB || '');
+          if (m.status === 'SCHEDULED' && teamsAreKnown && m.probHome !== null && m.probDraw !== null && m.probAway !== null) {
+            probContainer.style.display = 'block';
+            probContainer.innerHTML = `
+              <div class="prob-header">Probabilidades de triunfo</div>
+              <div class="prob-labels">
+                <span class="prob-label-val prob-val-home">L: ${m.probHome}%</span>
+                <span class="prob-label-val prob-val-draw">E: ${m.probDraw}%</span>
+                <span class="prob-label-val prob-val-away">V: ${m.probAway}%</span>
+              </div>
+              <div class="prob-bar-track">
+                <div class="prob-bar-fill-home" style="width: ${m.probHome}%; background-color: ${getTeamColor(m.teamA)}; background-image: none;"></div>
+                <div class="prob-bar-fill-draw" style="width: ${m.probDraw}%"></div>
+                <div class="prob-bar-fill-away" style="width: ${m.probAway}%; background-color: ${getTeamColor(m.teamB)}; background-image: none;"></div>
+              </div>
+            `;
+          } else {
+            probContainer.style.display = 'none';
+          }
+        }
+      }
+
+      // Si un partido cambió de estado (ej. pasó a LIVE), recargar la página
+      const wasLive = card.classList.contains('match-card--live');
+      const isNowLive = (m.status === 'LIVE' || m.status === 'HALFTIME');
+      if (!wasLive && isNowLive) {
+        // Un partido acaba de empezar – recargar para actualizar la UI completa
+        location.reload();
+      }
+      if (m.isFinished && card.querySelector('.score-inputs')) {
+        // Un partido acaba de terminar y todavía mostramos inputs – recargar
+        location.reload();
+      }
+    } catch (err) {
+      console.error(`Error updating match ${m.id}:`, err);
+    }
+  });
+
+  // Redibujar las líneas del bracket si existe la función (Fase Final)
+  if (typeof window.drawBracketLines === 'function') {
+    window.drawBracketLines();
+  }
+}
+
+function updateLeaderboard(leaderboard) {
+  const container = document.getElementById('leaderboard');
+  if (!container || !leaderboard.length) return;
+
+  // Recalcular bolsa acumulada en vivo
+  const paidCount = leaderboard.filter(u => u.hasPaid).length;
+  const totalPrize = paidCount * 500;
+  
+  const amountEl = document.getElementById('prize-pool-amount');
+  const participantsEl = document.getElementById('prize-pool-participants');
+  if (amountEl) {
+    amountEl.textContent = `$${totalPrize.toLocaleString()} MXN`;
+  }
+  if (participantsEl) {
+    participantsEl.textContent = `${paidCount} ${paidCount === 1 ? 'participante' : 'participantes'} de $500 pesos`;
+  }
+
+  const medals = ['🥇'];
+
+  container.innerHTML = leaderboard.map((u, i) => {
+    const topClass = i < 3 ? `top-${i + 1}` : '';
+    const youTag = u.isYou ? '<span style="font-size:0.7rem; color:var(--accent-color)"> (tú)</span>' : '';
+    const paidTag = u.hasPaid ? ' <span class="paid-indicator" title="Participa por la bolsa de premios">$</span>' : '';
+    const projectedTag = u.projected > 0
+      ? `<div class="lb-projected">+${u.projected} en vivo</div>`
+      : '';
+
+    let livePredsHtml = '';
+    if (u.livePredictions && u.livePredictions.length > 0) {
+      const predChips = u.livePredictions.map(lp => {
+        const flagA = lp.flagA ? `<img src="${lp.flagA}" alt="${escapeHtml(lp.teamA)}" style="width: 13px; height: auto; border-radius: 1px; display: block;" />` : '';
+        const flagB = lp.flagB ? `<img src="${lp.flagB}" alt="${escapeHtml(lp.teamB)}" style="width: 13px; height: auto; border-radius: 1px; display: block;" />` : '';
+        
+        let predictionValue = '';
+        if (lp.scoreA !== null && lp.scoreB !== null) {
+          predictionValue = `<strong style="color: white; font-size: 0.72rem; font-family: 'Inter', sans-serif;">${lp.scoreA}-${lp.scoreB}</strong>`;
+        } else {
+          predictionValue = `<span style="color: var(--text-secondary); font-size: 0.65rem; font-weight: 600; font-family: 'Inter', sans-serif;">Sin pronóstico</span>`;
+        }
+        
+        return `
+          <span style="display: inline-flex; align-items: center; gap: 0.2rem; background: rgba(255,255,255,0.04); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.03);" title="${escapeHtml(lp.teamA)} vs ${escapeHtml(lp.teamB)}">
+            ${flagA}
+            ${predictionValue}
+            ${flagB}
+          </span>
+        `;
+      }).join('');
+      
+      livePredsHtml = `
+        <div class="lb-live-preds" style="font-size: 0.72rem; color: var(--text-secondary); display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.35rem; width: 100%;">
+          <span style="font-size: 0.62rem; text-transform: uppercase; color: var(--fifa-cyan); font-weight: 800; letter-spacing: 0.5px; opacity: 0.85;">En vivo:</span>
+          ${predChips}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="leaderboard-row ${topClass}">
+        <div class="lb-rank">${medals[i] ?? (i + 1)}</div>
+        <div class="lb-name">
+          <div>${escapeHtml(u.username)}${paidTag}${youTag}</div>
+          ${livePredsHtml}
+        </div>
+        <div class="lb-score-block">
+          <div class="lb-points">${u.total}</div>
+          <div class="lb-pts-label">pts</div>
+          ${projectedTag}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateStandings(standings) {
+  for (const groupName in standings) {
+    const teams = standings[groupName];
+    const tbodyId = `group-body-${groupName.replace(/\s+/g, '-')}`;
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) continue;
+
+    let html = '';
+    teams.forEach((team, index) => {
+      const pos = index + 1;
+      const dg = team.gf - team.gc;
+      const dgStr = dg > 0 ? `+${dg}` : dg;
+      const isQualifier = pos <= 2;
+      const topClass = isQualifier ? 'top-two' : '';
+
+      const flagHtml = team.flag ? `<img src="${team.flag}" alt="${escapeHtml(team.name)}" />` : '';
+
+      html += `
+        <tr class="${topClass}">
+          <td class="num pos">${pos}</td>
+          <td class="team-cell">
+            ${flagHtml}
+            <span class="team-name-abbrev" title="${escapeHtml(team.name)}">
+              ${escapeHtml(team.name)}
+            </span>
+          </td>
+          <td class="num">${team.pj}</td>
+          <td class="num">${team.pg}</td>
+          <td class="num">${team.pe}</td>
+          <td class="num">${team.pp}</td>
+          <td class="num">${team.gf}</td>
+          <td class="num">${team.gc}</td>
+          <td class="num">${dgStr}</td>
+          <td class="num" style="font-weight: 800; color:var(--accent-color)">${team.pts}</td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+}
+
+function updateTopScorers(topScorers) {
+  const tbody = document.getElementById('top-scorers-body');
+  if (!tbody) return;
+
+  const entries = Object.entries(topScorers);
+  if (entries.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+          No hay goles registrados aún
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  let html = '';
+  let pos = 1;
+  entries.forEach(([player, info]) => {
+    const flagHtml = info.flag ? `<img src="${info.flag}" alt="${escapeHtml(info.team)}" style="width: 16px; height: auto; border-radius: 2px;" />` : '';
+    html += `
+      <tr>
+        <td class="num pos">${pos++}</td>
+        <td>
+          <div style="font-weight: 700">${escapeHtml(player)}</div>
+          <div style="font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.3rem; margin-top: 0.2rem;">
+            ${flagHtml}
+            <span>${escapeHtml(info.team)}</span>
+          </div>
+        </td>
+        <td class="num" style="font-weight: 800; color: var(--accent-color); font-size: 1.1rem">${info.goals}</td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+}
+
+function updateTournamentStats(stats) {
+  const pjEl = document.getElementById('stat-pj');
+  const totalGoalsEl = document.getElementById('stat-totalGoals');
+  const avgGoalsEl = document.getElementById('stat-avgGoals');
+  const penaltiesEl = document.getElementById('stat-penalties');
+  const ownGoalsEl = document.getElementById('stat-ownGoals');
+  const yellowsEl = document.getElementById('stat-yellows');
+  const redsEl = document.getElementById('stat-reds');
+  const bestAttackEl = document.getElementById('record-best-attack');
+  const worstDefenseEl = document.getElementById('record-worst-defense');
+  const maxGoalsEl = document.getElementById('record-max-goals');
+
+  if (pjEl) pjEl.textContent = stats.pj;
+  if (totalGoalsEl) totalGoalsEl.textContent = stats.totalGoals;
+  if (avgGoalsEl) avgGoalsEl.textContent = stats.avgGoals;
+  if (penaltiesEl) penaltiesEl.textContent = stats.penalties;
+  if (ownGoalsEl) ownGoalsEl.textContent = stats.ownGoals;
+  if (yellowsEl) yellowsEl.innerHTML = `🟨 ${stats.totalYellows}`;
+  if (redsEl) redsEl.innerHTML = `🟥 ${stats.totalReds}`;
+
+  if (bestAttackEl) {
+    bestAttackEl.textContent = stats.bestAttackTeam 
+      ? `${stats.bestAttackTeam} (${stats.bestAttackGoals} Goles)` 
+      : '–';
+  }
+  if (worstDefenseEl) {
+    worstDefenseEl.textContent = stats.worstDefenseTeam 
+      ? `${stats.worstDefenseTeam} (${stats.worstDefenseGoals} Goles)` 
+      : '–';
+  }
+  if (maxGoalsEl) {
+    if (stats.maxGoalsMatch) {
+      maxGoalsEl.textContent = `${stats.maxGoalsMatch.teamA} ${stats.maxGoalsMatch.scoreA} – ${stats.maxGoalsMatch.scoreB} ${stats.maxGoalsMatch.teamB}`;
+    } else {
+      maxGoalsEl.textContent = '–';
+    }
+  }
+}
+
+function updateTopCards(topCards) {
+  const tbodyYellow = document.getElementById('top-yellows-body');
+  const tbodyRed = document.getElementById('top-reds-body');
+
+  if (tbodyYellow) {
+    const yellows = Object.values(topCards.yellow || {});
+    if (yellows.length === 0) {
+      tbodyYellow.innerHTML = '<tr><td style="color:var(--text-secondary); text-align:center; padding:1rem;">Ninguna</td></tr>';
+    } else {
+      tbodyYellow.innerHTML = yellows.map(info => {
+        const flagHtml = info.flag ? `<img src="${info.flag}" alt="${escapeHtml(info.team)}" style="width: 18px; height: auto; border-radius: 2px;" />` : '';
+        const detailsHtml = (info.details || []).map(detail => `
+          <li style="display: flex; align-items: center; gap: 0.3rem;">
+            <span>🟨</span>
+            <span>${escapeHtml(detail)}</span>
+          </li>
+        `).join('');
+        return `
+          <tr class="team-card-row" onclick="toggleTeamCardDetails(this)">
+            <td>
+              <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
+                ${flagHtml}
+                <span>${escapeHtml(info.team)}</span>
+              </div>
+            </td>
+            <td class="num" style="font-weight:800; color:#ffaa00">${info.count}</td>
+          </tr>
+          <tr class="team-card-details-row" style="display: none;">
+            <td colspan="2" style="padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.02); border-radius: 4px;">
+              <ul style="list-style: none; margin: 0; padding: 0; font-size: 0.75rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem;">
+                ${detailsHtml}
+              </ul>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  if (tbodyRed) {
+    const reds = Object.values(topCards.red || {});
+    if (reds.length === 0) {
+      tbodyRed.innerHTML = '<tr><td style="color:var(--text-secondary); text-align:center; padding:1rem;">Ninguna</td></tr>';
+    } else {
+      tbodyRed.innerHTML = reds.map(info => {
+        const flagHtml = info.flag ? `<img src="${info.flag}" alt="${escapeHtml(info.team)}" style="width: 18px; height: auto; border-radius: 2px;" />` : '';
+        const detailsHtml = (info.details || []).map(detail => `
+          <li style="display: flex; align-items: center; gap: 0.3rem;">
+            <span>🟥</span>
+            <span>${escapeHtml(detail)}</span>
+          </li>
+        `).join('');
+        return `
+          <tr class="team-card-row" onclick="toggleTeamCardDetails(this)">
+            <td>
+              <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
+                ${flagHtml}
+                <span>${escapeHtml(info.team)}</span>
+              </div>
+            </td>
+            <td class="num" style="font-weight:800; color:#ff0055">${info.count}</td>
+          </tr>
+          <tr class="team-card-details-row" style="display: none;">
+            <td colspan="2" style="padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.02); border-radius: 4px;">
+              <ul style="list-style: none; margin: 0; padding: 0; font-size: 0.75rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem;">
+                ${detailsHtml}
+              </ul>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+}
+
+function toggleTeamCardDetails(row) {
+  const detailsRow = row.nextElementSibling;
+  if (!detailsRow || !detailsRow.classList.contains('team-card-details-row')) return;
+  const isHidden = detailsRow.style.display === 'none';
+  if (isHidden) {
+    detailsRow.style.display = 'table-row';
+    row.classList.add('active-row');
+  } else {
+    detailsRow.style.display = 'none';
+    row.classList.remove('active-row');
+  }
+}
+
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ── Modal de Detalles del Partido (Alineaciones y Estadísticas) ──
+let activeModalMatchId = null;
+
+async function openMatchDetails(matchId) {
+  activeModalMatchId = matchId;
+  const modal = document.getElementById('match-details-modal');
+  if (!modal) return;
+  
+  // Mostrar modal y transición
+  modal.classList.add('active');
+  
+  // Limpiar/Loader
+  document.getElementById('modal-score-value').textContent = '–';
+  document.getElementById('modal-status-badge').textContent = 'Cargando...';
+  document.getElementById('modal-status-badge').className = '';
+  document.getElementById('modal-stats-container').innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-secondary)">Cargando estadísticas...</div>';
+  document.getElementById('lineup-starters-a').innerHTML = '';
+  document.getElementById('lineup-bench-a').innerHTML = '';
+  document.getElementById('lineup-starters-b').innerHTML = '';
+  document.getElementById('lineup-bench-b').innerHTML = '';
+  document.getElementById('subs-timeline-a').innerHTML = '';
+  document.getElementById('subs-timeline-b').innerHTML = '';
+  
+  // Reset tabs
+  switchModalTab('stats');
+  
+  try {
+    const res = await fetch(`api/match_details.php?id=${matchId}`);
+    const data = await res.json();
+    
+    if (data.error) {
+      document.getElementById('modal-status-badge').textContent = 'Error';
+      document.getElementById('modal-stats-container').innerHTML = `<div style="text-align:center; padding:2rem; color:#ff6b9d">${escapeHtml(data.error)}</div>`;
+      return;
+    }
+    
+    // Set Header
+    document.getElementById('modal-name-a').textContent = data.teamA;
+    document.getElementById('modal-name-b').textContent = data.teamB;
+    document.getElementById('modal-flag-a').src = data.flagA || '';
+    document.getElementById('modal-flag-b').src = data.flagB || '';
+    document.getElementById('lineup-title-a').textContent = data.teamA;
+    document.getElementById('lineup-title-b').textContent = data.teamB;
+    document.getElementById('subs-title-a').textContent = data.teamA;
+    document.getElementById('subs-title-b').textContent = data.teamB;
+    
+    const scoreA = data.scoreA !== null ? data.scoreA : 0;
+    const scoreB = data.scoreB !== null ? data.scoreB : 0;
+    document.getElementById('modal-score-value').textContent = `${scoreA} – ${scoreB}`;
+    
+    // Info adicional
+    document.getElementById('modal-info-venue').innerHTML = `📍 ${escapeHtml(data.venue || 'Sede no disponible')}`;
+    document.getElementById('modal-info-referee').innerHTML = `👤 Árbitro: ${escapeHtml(data.referee || '–')}`;
+    document.getElementById('modal-info-attendance').innerHTML = `👥 Asistencia: ${data.attendance ? data.attendance.toLocaleString() : '–'}`;
+    
+    // Status Badge
+    const badge = document.getElementById('modal-status-badge');
+    badge.textContent = data.status === 'LIVE' ? `EN VIVO ${data.minute ? "· " + data.minute + "'" : ''}` : (data.status === 'HALFTIME' ? 'MEDIO TIEMPO' : (data.status === 'FINISHED' ? 'FINAL' : 'PROGRAMADO'));
+    badge.className = data.status === 'LIVE' ? 'live-indicator' : (data.status === 'HALFTIME' ? 'live-indicator live-indicator--ht' : '');
+    
+    // Render Stats
+    renderModalStats(data.stats);
+    
+    // Render Lineups
+    renderModalRoster(data.rosters, data.scorers, data.cards);
+    
+    // Render Subs
+    renderModalSubs(data.substitutions);
+    
+    // Render Shootout
+    if (data.shootout && (data.shootout.teamA?.length > 0 || data.shootout.teamB?.length > 0)) {
+        document.getElementById('modal-btn-shootout').style.display = 'inline-block';
+        renderModalShootout(data.shootout);
+    } else {
+        document.getElementById('modal-btn-shootout').style.display = 'none';
+        document.getElementById('shootout-list-a').innerHTML = '';
+        document.getElementById('shootout-list-b').innerHTML = '';
+    }
+    
+  } catch (e) {
+    document.getElementById('modal-status-badge').textContent = 'Error';
+    document.getElementById('modal-stats-container').innerHTML = '<div style="text-align:center; padding:2rem; color:#ff6b9d">Error de conexión al cargar detalles</div>';
+  }
+}
+
+function closeMatchDetails() {
+  const modal = document.getElementById('match-details-modal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+  activeModalMatchId = null;
+}
+
+// Cerrar modal haciendo clic afuera
+window.addEventListener('click', (e) => {
+  const modal = document.getElementById('match-details-modal');
+  if (e.target === modal) {
+    closeMatchDetails();
+  }
+});
+
+function switchModalTab(tabId) {
+  document.querySelectorAll('.modal-tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.modal-tab-pane').forEach(pane => pane.classList.remove('active'));
+  
+  const activeBtn = document.getElementById(`modal-btn-${tabId}`);
+  const activePane = document.getElementById(`modal-tab-${tabId}`);
+  
+  if (activeBtn) activeBtn.classList.add('active');
+  if (activePane) activePane.classList.add('active');
+}
+
+function renderModalStats(stats) {
+  const container = document.getElementById('modal-stats-container');
+  if (!container) return;
+  
+  const statLabelsMap = {
+    'possessionPct': 'Posesión de Balón',
+    'totalShots': 'Tiros Totales',
+    'shotsOnTarget': 'Tiros a Portería',
+    'wonCorners': 'Tiros de Esquina',
+    'foulsCommitted': 'Faltas',
+    'saves': 'Atajadas del Portero',
+    'offsides': 'Fueras de Juego'
+  };
+  
+  let html = '';
+  
+  for (const key in statLabelsMap) {
+    if (!stats[key]) continue;
+    
+    const label = statLabelsMap[key];
+    const valAStr = stats[key].teamA || '0';
+    const valBStr = stats[key].teamB || '0';
+    
+    // Calcular porcentaje para las barras
+    let pctA = 50;
+    let pctB = 50;
+    
+    const valA = parseFloat(valAStr.replace('%', ''));
+    const valB = parseFloat(valBStr.replace('%', ''));
+    
+    if (valA + valB > 0) {
+      pctA = (valA / (valA + valB)) * 100;
+      pctB = (valB / (valA + valB)) * 100;
+    } else if (valA === 0 && valB === 0) {
+      pctA = 0;
+      pctB = 0;
+    }
+    
+    html += `
+      <div class="stat-row">
+        <div class="stat-labels">
+          <span class="stat-val-a">${escapeHtml(valAStr)}</span>
+          <span class="stat-name">${escapeHtml(label)}</span>
+          <span class="stat-val-b">${escapeHtml(valBStr)}</span>
+        </div>
+        <div class="stat-bar-track">
+          <div class="stat-bar-fill-a" style="width: ${pctA}%"></div>
+          <div class="stat-bar-fill-b" style="width: ${pctB}%"></div>
+        </div>
+      </div>
+    `;
+  }
+  
+  if (!html) {
+    container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-secondary)">No hay estadísticas disponibles para este partido aún</div>';
+  } else {
+    container.innerHTML = html;
+  }
+}
+
+function renderModalRoster(rosters, scorers, cards) {
+  const renderList = (players, ulId, teamKey) => {
+    const ul = document.getElementById(ulId);
+    if (!ul) return;
+    ul.innerHTML = '';
+    
+    if (!players || players.length === 0) {
+      ul.innerHTML = '<li class="lineup-player-item" style="color:var(--text-secondary)">No disponible</li>';
+      return;
+    }
+    
+    players.forEach(p => {
+      const li = document.createElement('li');
+      li.className = 'lineup-player-item';
+      
+      const numSpan = document.createElement('span');
+      numSpan.className = 'player-number';
+      numSpan.textContent = p.jersey || '–';
+      
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'player-name-text';
+      nameSpan.textContent = p.name;
+      
+      if (p.position && p.position !== 'Unknown') {
+        const posTag = document.createElement('span');
+        posTag.className = 'player-pos-tag';
+        posTag.textContent = p.position;
+        nameSpan.appendChild(posTag);
+      }
+      
+      // Contenedor de eventos (goles, tarjetas, cambios)
+      const eventsDiv = document.createElement('div');
+      eventsDiv.className = 'player-events';
+      
+      // Si el jugador fue sustituido
+      if (p.subbedOut) {
+        const subOut = document.createElement('span');
+        subOut.title = 'Sustituido';
+        subOut.textContent = '🔄';
+        eventsDiv.appendChild(subOut);
+      }
+      if (p.subbedIn) {
+        const subIn = document.createElement('span');
+        subIn.title = 'Entró de cambio';
+        subIn.textContent = '📥';
+        eventsDiv.appendChild(subIn);
+      }
+      
+      // Buscar si el jugador anotó gol o tiene tarjeta en nuestros datos locales
+      const card = document.querySelector(`.match-card[data-match-id="${activeModalMatchId}"]`);
+      if (card) {
+        // 1. Buscar goles normales en su propio equipo (no deben ser autogoles)
+        const ownTeamIndex = teamKey === 'teamA' ? 1 : 3;
+        const ownScorers = card.querySelectorAll(`.team:nth-child(${ownTeamIndex}) .team-scorers .scorer-item`);
+        ownScorers.forEach(sc => {
+          if (isPlayerMatch(p.name, sc.textContent) && !sc.textContent.includes('(ag.')) {
+            const goalSpan = document.createElement('span');
+            goalSpan.textContent = '⚽';
+            goalSpan.title = sc.textContent;
+            eventsDiv.appendChild(goalSpan);
+          }
+        });
+        
+        // 2. Buscar autogoles en el equipo contrario (deben contener '(ag.')
+        const opposingTeamIndex = teamKey === 'teamA' ? 3 : 1;
+        const opposingScorers = card.querySelectorAll(`.team:nth-child(${opposingTeamIndex}) .team-scorers .scorer-item`);
+        opposingScorers.forEach(sc => {
+          if (isPlayerMatch(p.name, sc.textContent) && sc.textContent.includes('(ag.')) {
+            const ogSpan = document.createElement('span');
+            ogSpan.innerHTML = '⚽ <span style="color:var(--text-secondary); font-size:0.85em; font-weight:bold;">(ag.)</span>';
+            ogSpan.title = sc.textContent;
+            eventsDiv.appendChild(ogSpan);
+          }
+        });
+        
+        const cardsInCard = card.querySelectorAll(`#cards${teamKey === 'teamA' ? 'A' : 'B'}-${activeModalMatchId} div`);
+        cardsInCard.forEach(c => {
+          if (isPlayerMatch(p.name, c.textContent)) {
+            const cardSpan = document.createElement('span');
+            cardSpan.textContent = c.textContent.includes('🟨') ? '🟨' : '🟥';
+            cardSpan.title = c.textContent;
+            eventsDiv.appendChild(cardSpan);
+          }
+        });
+      }
+      
+      li.appendChild(numSpan);
+      li.appendChild(nameSpan);
+      li.appendChild(eventsDiv);
+      ul.appendChild(li);
+    });
+  };
+  
+  renderList(rosters.teamA.starters, 'lineup-starters-a', 'teamA');
+  renderList(rosters.teamA.bench, 'lineup-bench-a', 'teamA');
+  renderList(rosters.teamB.starters, 'lineup-starters-b', 'teamB');
+  renderList(rosters.teamB.bench, 'lineup-bench-b', 'teamB');
+}
+
+function renderModalShootout(shootout) {
+  const renderShootoutColumn = (teamShots, containerId) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (!teamShots || teamShots.length === 0) {
+      container.innerHTML = '<li class="lineup-player-item" style="color:var(--text-secondary); text-align:center;">Sin tiradores registrados</li>';
+      return;
+    }
+    
+    teamShots.forEach(shot => {
+      const li = document.createElement('li');
+      li.className = 'lineup-player-item';
+      
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'player-number';
+      iconSpan.textContent = shot.didScore ? '🟢' : '🔴';
+      iconSpan.style.background = 'transparent';
+      iconSpan.style.fontSize = '1.2rem';
+      
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'player-name-text';
+      nameSpan.textContent = shot.player || '–';
+      
+      li.appendChild(iconSpan);
+      li.appendChild(nameSpan);
+      container.appendChild(li);
+    });
+  };
+  
+  renderShootoutColumn(shootout.teamA, 'shootout-list-a');
+  renderShootoutColumn(shootout.teamB, 'shootout-list-b');
+}
+
+function renderModalSubs(subs) {
+  const renderSubsColumn = (teamSubs, containerId) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (!teamSubs || teamSubs.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-secondary); font-size:0.8rem; padding:1rem; text-align:center">Sin sustituciones registradas</div>';
+      return;
+    }
+    
+    teamSubs.sort((a, b) => parseInt(a.minute) - parseInt(b.minute));
+    
+    teamSubs.forEach(s => {
+      const item = document.createElement('div');
+      item.className = 'subs-timeline-item';
+      
+      const minSpan = document.createElement('span');
+      minSpan.className = 'sub-minute';
+      minSpan.textContent = s.minute || '–';
+      
+      const details = document.createElement('div');
+      details.className = 'sub-details';
+      
+      const inSpan = document.createElement('span');
+      inSpan.className = 'sub-in';
+      inSpan.textContent = `🟢 ${s.in}`;
+      
+      const outSpan = document.createElement('span');
+      outSpan.className = 'sub-out';
+      outSpan.textContent = `🔴 ${s.out}`;
+      
+      details.appendChild(inSpan);
+      details.appendChild(outSpan);
+      
+      item.appendChild(minSpan);
+      item.appendChild(details);
+      
+      container.appendChild(item);
+    });
+  };
+  
+  renderSubsColumn(subs.teamA, 'subs-timeline-a');
+  renderSubsColumn(subs.teamB, 'subs-timeline-b');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getCleanEventPlayerName(text) {
+  // Remove emojis
+  let name = text.replace(/[⚽🟨🟥]/g, '');
+  // Remove minute (e.g. " 45'", " 90+2'")
+  name = name.replace(/\s+\d+(?:\+\d+)?'/, '');
+  // Remove suffixes like (p.) or (ag.)
+  name = name.replace(/\s*\(p\.\)/gi, '');
+  name = name.replace(/\s*\(ag\.\)/gi, '');
+  return name.trim().toLowerCase();
+}
+
+function isPlayerMatch(rosterName, eventText) {
+  const cleanRoster = rosterName.toLowerCase().trim();
+  const cleanEvent = getCleanEventPlayerName(eventText).replace(/\./g, '').trim(); // Remove dots from abbreviations
+  
+  if (cleanRoster === cleanEvent) return true;
+  
+  const rosterWords = cleanRoster.split(/\s+/);
+  const eventWords = cleanEvent.split(/\s+/);
+  
+  if (eventWords.length === 0) return false;
+  
+  // If event name has only 1 word, it must be present in rosterWords
+  if (eventWords.length === 1) {
+    const singleWord = eventWords[0];
+    if (rosterWords.includes(singleWord)) {
+      // Prevent false positives on common first names if it is the first word and the roster has a last name
+      const commonFirstNames = new Set([
+        "raúl", "raul", "josé", "jose", "juan", "luis", "carlos", "diego", "david", 
+        "javier", "alejandro", "roberto", "fernando", "daniel", "mateo", "santiago", 
+        "sebastian", "gabriel", "lucas", "nicolás", "nicolas", "pedro", "jorge", 
+        "miguel", "ángel", "angel", "antonio", "manuel", "francisco", "césar", "cesar",
+        "hugo", "arturo", "sergio", "rodrigo", "marcos", "christian", "cristian"
+      ]);
+      if (rosterWords.indexOf(singleWord) === 0 && rosterWords.length > 1 && commonFirstNames.has(singleWord)) {
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+  
+  // For multi-word event names (e.g. "r jimenez" or "raul jimenez"), all words must match
+  return eventWords.every(ew => {
+    if (ew.length === 1) {
+      // Abbreviation: must match starting letter of at least one roster word
+      return rosterWords.some(rw => rw.startsWith(ew));
+    } else {
+      // Full word: must exist in rosterWords
+      return rosterWords.includes(ew);
+    }
+  });
+}
+
+let sharedAudioCtx = null;
+
+const HALFTIME_ACTS = {
+  carnaval: {
+    name: 'Carnaval de Río',
+    emojis: '🦜 💃 🥁 🪶 ✨',
+    dialog: '¡SAMBA! ¡Siente la energía de Río! 🦜💃',
+    dance: 'dance-bounce',
+    spotlights: ['rgba(57, 255, 20, 0.65)', 'rgba(255, 235, 59, 0.65)', 'rgba(0, 191, 255, 0.65)'],
+    crowd: '🙌💃🕺🥳',
+    particles: ['🎉', '🥁', '✨', '🦜'],
+    playMusic: (ctx) => {
+      const times = [0, 0.15, 0.3, 0.45, 0.6, 0.75];
+      times.forEach(t => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, ctx.currentTime + t);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime + t);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + t);
+        osc.stop(ctx.currentTime + t + 0.1);
+      });
+      playMelody(ctx, [261.63, 329.63, 392.00, 329.63], 'sine', 0.2, 0.2, 0.1);
+    }
+  },
+  drones: {
+    name: 'Show de Drones 3D',
+    emojis: '🛸 🌌 💫 ⭐ 🛸',
+    dialog: '¡Dibujando galaxias en el cielo! 🌌✨',
+    dance: 'dance-swing',
+    spotlights: ['rgba(0, 240, 255, 0.65)', 'rgba(180, 0, 255, 0.65)'],
+    crowd: '🤩👀🌌🔭',
+    particles: ['🛸', '✨', '⭐', '💫'],
+    playMusic: (ctx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(100, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 1.2);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.8);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 1.2);
+    }
+  },
+  circo: {
+    name: 'Circo Acrobático de Neón',
+    emojis: '🎪 🤸‍♀️ 🎭 🔥 🎪',
+    dialog: '¡Acróbatas volando sobre el fuego! 🎪🔥',
+    dance: 'dance-jump',
+    spotlights: ['rgba(255, 0, 127, 0.65)', 'rgba(138, 43, 226, 0.65)', 'rgba(255, 215, 0, 0.55)'],
+    crowd: '😮😲👏👏',
+    particles: ['🎪', '✨', '🎈', '🤸'],
+    playMusic: (ctx) => {
+      playArpeggio(ctx, [523.25, 659.25, 783.99, 987.77, 1046.50], 'triangle', 0.15, 0.12, 0.08);
+    }
+  },
+  fuegos: {
+    name: 'Fuegos Artificiales Gigantes',
+    emojis: '🎆 🎇 💥 🔥 🎆',
+    dialog: '¡KABOOM! ¡El cielo se ilumina! 🎆💥',
+    dance: 'dance-jump',
+    spotlights: ['rgba(255, 0, 50, 0.65)', 'rgba(0, 255, 100, 0.65)', 'rgba(255, 255, 255, 0.55)'],
+    crowd: '🎆🎇💥🙌',
+    particles: ['💥', '✨', '🔥', '🎇'],
+    playMusic: (ctx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(30, ctx.currentTime + 0.8);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.8);
+    }
+  },
+  laser: {
+    name: 'DJ & Batalla de Láseres',
+    emojis: '🎧 💿 ⚡ 🟢 🔴',
+    dialog: '¡Siente los graves del Neón! ⚡🎧',
+    dance: 'dance-wobble',
+    spotlights: ['rgba(255, 20, 147, 0.65)', 'rgba(57, 255, 20, 0.65)', 'rgba(0, 240, 255, 0.65)'],
+    crowd: '🙌🕺⚡💃',
+    particles: ['⚡', '🎵', '🟢', '🔴'],
+    playMusic: (ctx) => {
+      playArpeggio(ctx, [130.81, 130.81, 261.63, 196.00, 261.63, 392.00], 'square', 0.08, 0.08, 0.06);
+    }
+  },
+  monsters: {
+    name: 'Monster Trucks de Fuego',
+    emojis: '🛞 🏎️ 🔥 💥 🛞',
+    dialog: '¡Ruedas gigantes saltando fuego! 🔥🏎️',
+    dance: 'dance-wobble',
+    spotlights: ['rgba(255, 69, 0, 0.65)', 'rgba(255, 0, 0, 0.65)'],
+    crowd: '🤘🔥🏎️💥',
+    particles: ['🔥', '💥', '🛞', '💨'],
+    playMusic: (ctx) => {
+      playPowerChord(ctx, [82.41, 123.47, 164.81], 'sawtooth', 0.8, 0.12);
+    }
+  },
+  aurora: {
+    name: 'Auroras Boreales',
+    emojis: '🌌 ❄️ 🐋 🔮 ✨',
+    dialog: '¡Las luces del norte en el estadio! 🌌💚',
+    dance: 'dance-swing',
+    spotlights: ['rgba(0, 255, 127, 0.65)', 'rgba(186, 85, 211, 0.65)', 'rgba(0, 255, 255, 0.65)'],
+    crowd: '🤩🥶🌌🪐',
+    particles: ['❄️', '✨', '🌌', '🔮'],
+    playMusic: (ctx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(329.63, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(440.00, ctx.currentTime + 1.5);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 1.5);
+    }
+  },
+  dragon: {
+    name: 'Danza del Dragón',
+    emojis: '🐉 🏮 🦁 🥁 💥',
+    dialog: '¡Mística danza del Dragón de Fuego! 🐉🏮',
+    dance: 'dance-bounce',
+    spotlights: ['rgba(255, 0, 0, 0.75)', 'rgba(255, 215, 0, 0.75)', 'rgba(255, 165, 0, 0.65)'],
+    crowd: '🙌🐉🥁🎇',
+    particles: ['🏮', '🐉', '✨', '💥'],
+    playMusic: (ctx) => {
+      const beats = [0, 0.2, 0.4, 0.6, 0.8];
+      beats.forEach(b => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(80, ctx.currentTime + b);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime + b);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + b + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + b);
+        osc.stop(ctx.currentTime + b + 0.18);
+      });
+    }
+  },
+  holi: {
+    name: 'Festival del Color Holi',
+    emojis: '🎨 🌈 💃 🕺 ✨',
+    dialog: '¡Explosión total de colores neón! 🌈🎨',
+    dance: 'dance-jump',
+    spotlights: ['rgba(255, 20, 147, 0.75)', 'rgba(255, 255, 0, 0.75)', 'rgba(0, 240, 255, 0.65)'],
+    crowd: '🙌🎨🌈🕺',
+    particles: ['🎨', '🌈', '✨', '💦'],
+    playMusic: (ctx) => {
+      playMelody(ctx, [329.63, 349.23, 392.00, 523.25], 'triangle', 0.12, 0.12, 0.08);
+    }
+  },
+  motos: {
+    name: 'Globo de la Muerte (Acróbatas)',
+    emojis: '🏍️ 🌐 ⚡ 💥 🏍️',
+    dialog: '¡Adrenalina extrema sobre dos ruedas! ⚡🏍️',
+    dance: 'dance-wobble',
+    spotlights: ['rgba(255, 255, 0, 0.75)', 'rgba(255, 69, 0, 0.65)', 'rgba(0, 0, 0, 0.1)'],
+    crowd: '😮😲🤘🔥',
+    particles: ['🏍️', '⚡', '💥', '💨'],
+    playMusic: (ctx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(90, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(250, ctx.currentTime + 1.0);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 1.0);
+    }
+  },
+  fuentes: {
+    name: 'Fuentes Danzantes RGB',
+    emojis: '⛲ 💦 🌈 🌊 ✨',
+    dialog: '¡Agua, luz y sonido sincronizados! ⛲💦',
+    dance: 'dance-swing',
+    spotlights: ['rgba(0, 191, 255, 0.65)', 'rgba(0, 255, 191, 0.65)', 'rgba(138, 43, 226, 0.65)'],
+    crowd: '🤩💦🌊⛲',
+    particles: ['⛲', '💦', '🌊', '✨'],
+    playMusic: (ctx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 1.5);
+      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 1.5);
+    }
+  },
+  chiptune: {
+    name: 'Arcade Retro de los 80',
+    emojis: '🕹️ 👾 ⚡ 🛼 👾',
+    dialog: '¡Invasión pixelada de 8-bits! 🕹️👾',
+    dance: 'dance-bounce',
+    spotlights: ['rgba(255, 0, 127, 0.75)', 'rgba(0, 0, 255, 0.75)', 'rgba(57, 255, 20, 0.65)'],
+    crowd: '🕹️👾🛼👾',
+    particles: ['👾', '🕹️', '✨', '🍒'],
+    playMusic: (ctx) => {
+      playArpeggio(ctx, [523.25, 587.33, 659.25, 783.99, 1046.50], 'square', 0.08, 0.08, 0.06);
+    }
+  }
+};
+
+function playArpeggio(ctx, notes, type, duration, gap, volume = 0.08) {
+  notes.forEach((freq, index) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + index * gap);
+    gain.gain.setValueAtTime(volume, ctx.currentTime + index * gap);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + index * gap + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + index * gap);
+    osc.stop(ctx.currentTime + index * gap + duration);
+  });
+}
+
+function playPowerChord(ctx, notes, type, duration, volume = 0.06) {
+  notes.forEach((freq) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  });
+}
+
+function playMelody(ctx, notes, type, duration, gap, volume = 0.08) {
+  playArpeggio(ctx, notes, type, duration, gap, volume);
+}
+
+function playReggaeChop(ctx, notes, duration, volume = 0.08) {
+  const playChordAt = (timeOffset) => {
+    notes.forEach((freq) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + timeOffset);
+      gain.gain.setValueAtTime(volume, ctx.currentTime + timeOffset);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + timeOffset + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + timeOffset);
+      osc.stop(ctx.currentTime + timeOffset + duration);
+    });
+  };
+  playChordAt(0.1);
+  playChordAt(0.4);
+}
+
+function populateHalftimeShow(el, playAudio = true) {
+  if (el.dataset.populated === 'true') return;
+  el.dataset.populated = 'true';
+
+  const keys = Object.keys(HALFTIME_ACTS);
+  const randKey = keys[Math.floor(Math.random() * keys.length)];
+  el.dataset.actKey = randKey;
+  const act = HALFTIME_ACTS[randKey];
+
+  const lightColor1 = act.spotlights[0];
+  const lightColor2 = act.spotlights[1] || act.spotlights[0];
+  const lightColor3 = act.spotlights[2] || 'transparent';
+
+  const particles = act.particles || ['🎵', '🎶', '✨', '🎸'];
+  const crowd = act.crowd || '🙌🙌🙌🙌';
+
+  el.innerHTML = `
+    <div class="ht-stage-bg">
+      <div class="ht-spotlight ht-spotlight-1" style="background: linear-gradient(to top, ${lightColor1}, transparent 85%);"></div>
+      <div class="ht-spotlight ht-spotlight-2" style="background: linear-gradient(to top, ${lightColor2}, transparent 85%);"></div>
+      ${lightColor3 !== 'transparent' ? `<div class="ht-spotlight ht-spotlight-3" style="background: linear-gradient(to top, ${lightColor3}, transparent 85%); position: absolute; bottom: 0; left: 50%; width: 50px; height: 100%; transform: translateX(-50%) rotate(0deg); transform-origin: bottom center; filter: blur(8px); opacity: 0.45; animation: htSpotlightLeft 3.5s infinite alternate ease-in-out;"></div>` : ''}
+      <span class="ht-particle" style="left:15%; animation-delay: 0s; --p-dx: 15px;">${escapeHtml(particles[0])}</span>
+      <span class="ht-particle" style="left:38%; animation-delay: 1.2s; --p-dx: -25px;">${escapeHtml(particles[1])}</span>
+      <span class="ht-particle" style="left:60%; animation-delay: 0.6s; --p-dx: 20px;">${escapeHtml(particles[2])}</span>
+      <span class="ht-particle" style="left:82%; animation-delay: 1.8s; --p-dx: -15px;">${escapeHtml(particles[3])}</span>
+      <div class="ht-crowd">${escapeHtml(crowd)}</div>
+    </div>
+    <div class="halftime-bubble" style="z-index: 5;">Show de medio tiempo</div>
+    <div class="halftime-character-wrap" style="z-index: 5; text-align: center;">
+      <div class="halftime-bubble-dialog">${escapeHtml(act.dialog)}</div>
+      <br/>
+      <div class="halftime-character ${act.dance}" style="font-size: 2.5rem;">${escapeHtml(act.emojis)}</div>
+    </div>
+  `;
+
+  if (playAudio) {
+    try {
+      if (!sharedAudioCtx) {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtxClass) {
+          sharedAudioCtx = new AudioCtxClass();
+        }
+      }
+      if (sharedAudioCtx) {
+        if (sharedAudioCtx.state === 'suspended') {
+          sharedAudioCtx.resume();
+        }
+        act.playMusic(sharedAudioCtx);
+      }
+    } catch (e) {
+      console.error('Error playing act music:', e);
+    }
+  }
+}
+
+function initAudioOnFirstClick() {
+  const unlock = () => {
+    try {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) {
+        sharedAudioCtx = new AudioCtxClass();
+        if (sharedAudioCtx.state === 'suspended') {
+          sharedAudioCtx.resume();
+        }
+        
+        // Si hay algún show de medio tiempo visible al momento del clic de desbloqueo, haz sonar su música
+        document.querySelectorAll('.halftime-show').forEach(htShow => {
+          const actKey = htShow.dataset.actKey;
+          if (actKey && HALFTIME_ACTS[actKey]) {
+            HALFTIME_ACTS[actKey].playMusic(sharedAudioCtx);
+          }
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+    document.removeEventListener('click', unlock);
+    document.removeEventListener('touchstart', unlock);
+  };
+  document.addEventListener('click', unlock);
+  document.addEventListener('touchstart', unlock);
+}
+
+// Inicializar el escuchador de desbloqueo
+initAudioOnFirstClick();
+
+function getTeamColor(team) {
+  const colors = {
+    'México': '#006847',
+    'Sudáfrica': '#ffb612',
+    'República de Corea': '#c1272d',
+    'República Checa': '#11457e',
+    'Canadá': '#ff0000',
+    'Bosnia y Herzegovina': '#002f6c',
+    'Catar': '#8a1538',
+    'Suiza': '#d52b1e',
+    'Brasil': '#fec915',
+    'Marruecos': '#c1272d',
+    'Haití': '#00209f',
+    'Escocia': '#005eb8',
+    'Estados Unidos': '#002868',
+    'Paraguay': '#d52b1e',
+    'Australia': '#ffcd00',
+    'Turquía': '#e30a17',
+    'Alemania': '#111111',
+    'Curazao': '#002b7f',
+    'Costa de Marfil': '#ff8200',
+    'Ecuador': '#ffdd00',
+    'Países Bajos': '#ff4f00',
+    'Japón': '#004b87',
+    'Suecia': '#febc11',
+    'Túnez': '#e30a17',
+    'Bélgica': '#e30a17',
+    'Egipto': '#c00000',
+    'Irán': '#239e46',
+    'Nueva Zelanda': '#111111',
+    'España': '#c1272d',
+    'Cabo Verde': '#002b7f',
+    'Arabia Saudí': '#006c35',
+    'Uruguay': '#5bc2e7',
+    'Francia': '#002395',
+    'Senegal': '#00853f',
+    'Irak': '#007a3d',
+    'Noruega': '#ef2b2d',
+    'Argentina': '#75aadb',
+    'Argelia': '#006633',
+    'Austria': '#ed2939',
+    'Jordania': '#e30a17',
+    'Portugal': '#c1272d',
+    'RD de Congo': '#007fff',
+    'Uzbekistán': '#0099b5',
+    'Colombia': '#fcd116',
+    'Inglaterra': '#ce1126',
+    'Croacia': '#ff0000',
+    'Ghana': '#fcd116',
+    'Panamá': '#da291c'
+  };
+  return colors[team] || '#5c00ff';
+}
+
+/**
+ * Genera un color determinista basado en el nombre de usuario
+ */
+function getUsernameColor(username) {
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsla(${hue}, 75%, 65%, 0.35)`;
+}
+
+/**
+ * Inicializa el gráfico de evolución de puntos en la pestaña Estadísticas
+ */
+/**
+ * Inicializa el gráfico de barras horizontales apiladas para la evolución de puntos
+ */
+function initPointsHistoryChart() {
+  if (!window.pointsHistoryData || !window.pointsHistoryData.players || window.pointsHistoryData.players.length === 0) {
+    return;
+  }
+  
+  if (window.pointsHistoryChartInstance) {
+    return; // Ya inicializado
+  }
+  
+  const canvas = document.getElementById('pointsHistoryChart');
+  if (!canvas) {
+    return;
+  }
+  
+  // Mapeamos los datasets recibidos del backend. Cada dataset es un partido (P1, P2...)
+  const datasets = window.pointsHistoryData.datasets.map((ds, idx) => {
+    // Generar un color determinista para cada partido usando el ángulo dorado para que sean bien distinguibles
+    const hue = (idx * 137.5) % 360;
+    const baseColor = `hsla(${hue}, 70%, 55%, 0.7)`;
+    
+    // Generar bordes destacados (neon cyan) para la barra del usuario actual en todos sus segmentos
+    const borderColors = window.pointsHistoryData.players.map(player => {
+      return player === window.currentUsername ? '#00f0ff' : 'rgba(20, 25, 35, 0.4)';
+    });
+    const borderWidths = window.pointsHistoryData.players.map(player => {
+      return player === window.currentUsername ? 2 : 1;
+    });
+    
+    return {
+      label: ds.label,
+      description: ds.description, // Descripción completa del partido (ej. "Partido 1: EEUU vs Paraguay")
+      data: ds.data, // Puntos ganados por cada jugador en este partido (en orden de players)
+      backgroundColor: baseColor,
+      borderColor: borderColors,
+      borderWidth: borderWidths
+    };
+  });
+  
+  const ctx = canvas.getContext('2d');
+  window.pointsHistoryChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: window.pointsHistoryData.players, // Nombres de participantes en el eje Y
+      datasets: datasets
+    },
+    options: {
+      indexAxis: 'y', // Hace que el gráfico sea de barras horizontales
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          stacked: true, // Apilar barras en el eje X
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)',
+            drawBorder: false
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.6)',
+            font: {
+              family: "'Inter', sans-serif",
+              size: 11
+            },
+            callback: function(value) {
+              return value + ' pts';
+            }
+          }
+        },
+        y: {
+          stacked: true, // Apilar barras en el eje Y
+          grid: {
+            display: false, // Ocultar líneas de cuadrícula verticales del eje Y para limpiar la interfaz
+            drawBorder: false
+          },
+          ticks: {
+            autoSkip: false,
+            // Destacar al usuario actual en el eje Y en color cyan y negrita
+            color: function(context) {
+              const label = context.chart.data.labels[context.index];
+              return label === window.currentUsername ? '#00f0ff' : 'rgba(255, 255, 255, 0.6)';
+            },
+            font: function(context) {
+              const label = context.chart.data.labels[context.index];
+              const isCurrent = (label === window.currentUsername);
+              return {
+                family: "'Inter', sans-serif",
+                size: isCurrent ? 12 : 11,
+                weight: isCurrent ? 'bold' : 'normal'
+              };
+            }
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false // No mostrar leyenda de partidos (P1, P2...) para no saturar
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#00f0ff',
+          bodyColor: '#ffffff',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            title: function(context) {
+              // El título del tooltip muestra el nombre del jugador
+              return context[0].label;
+            },
+            label: function(context) {
+              const ds = context.dataset;
+              const pts = context.raw;
+              const desc = ds.description || ds.label;
+              return ` ${desc}: +${pts} pts`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Funciones de Ayuda para el Bracket en Vivo ──
+
+function resolvePlaceholder(placeholder, matches) {
+  if (!placeholder) return '';
+  
+  // Helper para traducir IDs a orden secuencial cronológico
+  const getMatchDisplayId = (matchId) => {
+    const ffMatches = matches.filter(m => parseInt(m.id) >= 73);
+    const idx = ffMatches.findIndex(m => parseInt(m.id) === parseInt(matchId));
+    return idx !== -1 ? (73 + idx) : matchId;
+  };
+  
+  // 1. Verificar si es Ganador o Perdedor de un partido anterior: "Ganador {id}" o "Perdedor {id}"
+  const matchPrev = placeholder.match(/^(Ganador|Perdedor)\s+(\d+)$/);
+  if (matchPrev) {
+    const type = matchPrev[1];
+    const prevMatchId = parseInt(matchPrev[2]);
+    const prevMatch = matches.find(m => parseInt(m.id) === prevMatchId);
+    
+    if (prevMatch && prevMatch.winner) {
+      if (type === 'Ganador') {
+        return prevMatch.winner;
+      } else {
+        // Perdedor
+        return (prevMatch.winner === prevMatch.teamA) ? prevMatch.teamB : prevMatch.teamA;
+      }
+    }
+    
+    const dispId = getMatchDisplayId(prevMatchId);
+    return `${type} ${dispId}`;
+  }
+  
+  return placeholder;
+}
+
+function getFlagUrl(team) {
+  const map = {
+    'México': 'mx', 'Sudáfrica': 'za', 'República de Corea': 'kr',
+    'República Checa': 'cz', 'Chequia': 'cz', 'Canadá': 'ca',
+    'Bosnia y Herzegovina': 'ba', 'Catar': 'qa', 'Suiza': 'ch',
+    'Brasil': 'br', 'Marruecos': 'ma', 'Haití': 'ht', 'Escocia': 'gb-sct',
+    'Estados Unidos': 'us', 'EE. UU.': 'us', 'Paraguay': 'py',
+    'Australia': 'au', 'Turquía': 'tr', 'Alemania': 'de',
+    'Curazao': 'cw', 'Costa de Marfil': 'ci', 'Ecuador': 'ec',
+    'Países Bajos': 'nl', 'Japón': 'jp', 'Suecia': 'se', 'Túnez': 'tn',
+    'Bélgica': 'be', 'Egipto': 'eg', 'RI de Irán': 'ir', 'Irán': 'ir',
+    'Nueva Zelanda': 'nz', 'España': 'es', 'Cabo Verde': 'cv',
+    'Islas de Cabo Verde': 'cv', 'Arabia Saudí': 'sa', 'Uruguay': 'uy',
+    'Francia': 'fr', 'Senegal': 'sn', 'Irak': 'iq', 'Noruega': 'no',
+    'Argentina': 'ar', 'Argelia': 'dz', 'Austria': 'at', 'Jordania': 'jo',
+    'Portugal': 'pt', 'RD Congo': 'cd', 'RD de Congo': 'cd',
+    'Uzbekistán': 'uz', 'Colombia': 'co', 'Inglaterra': 'gb-eng',
+    'Croacia': 'hr', 'Ghana': 'gh', 'Panamá': 'pa'
+  };
+  const code = map[team];
+  return code ? `https://flagcdn.com/w80/${code}.png` : '';
+}
+
+function updateBracketTeamRow(row, teamName, winnerName) {
+  const nameEl = row.querySelector('.bracket-team-name');
+  if (nameEl) {
+    const isPlaceholder = teamName.includes('Ganador') || teamName.includes('Perdedor') || teamName.includes('3A') || teamName.includes('3B') || /^[12][A-L]$/.test(teamName);
+    
+    let htmlContent = teamName;
+    if (isPlaceholder) {
+      htmlContent = `<span class="bracket-placeholder-team">${teamName}</span>`;
+    }
+    
+    if (nameEl.innerHTML !== htmlContent) {
+      nameEl.innerHTML = htmlContent;
+    }
+  }
+  
+  // Actualizar bandera
+  const infoEl = row.querySelector('.bracket-team-info');
+  if (infoEl) {
+    const flagUrl = getFlagUrl(teamName);
+    const existingImg = infoEl.querySelector('.bracket-team-flag');
+    const existingPlaceholder = infoEl.querySelector('.bracket-team-flag-placeholder');
+    
+    if (flagUrl) {
+      if (existingPlaceholder) {
+        existingPlaceholder.remove();
+      }
+      if (existingImg) {
+        if (existingImg.src !== flagUrl) {
+          existingImg.src = flagUrl;
+        }
+      } else {
+        const img = document.createElement('img');
+        img.className = 'bracket-team-flag';
+        img.src = flagUrl;
+        infoEl.insertBefore(img, infoEl.firstChild);
+      }
+    } else {
+      if (existingImg) {
+        existingImg.remove();
+      }
+      if (!existingPlaceholder) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'bracket-team-flag-placeholder';
+        infoEl.insertBefore(placeholder, infoEl.firstChild);
+      }
+    }
+  }
+  
+  // Actualizar clases de ganador
+  if (winnerName && teamName && winnerName === teamName) {
+    row.classList.add('winner-row');
+    const scoreEl = row.querySelector('.bracket-team-score');
+    if (scoreEl) scoreEl.classList.add('winner-score');
+  } else {
+    row.classList.remove('winner-row');
+    const scoreEl = row.querySelector('.bracket-team-score');
+    if (scoreEl) scoreEl.classList.remove('winner-score');
+  }
+}
+
+async function updateLiveForecast(m) {
+  const probContainer = document.getElementById(`prob-container-${m.id}`);
+  const scoreContainer = document.getElementById(`likely-scores-container-${m.id}`);
+  
+  const fallbackHome = m.probHome;
+  const fallbackDraw = m.probDraw;
+  const fallbackAway = m.probAway;
+
+  function showFallback() {
+    if (probContainer && fallbackHome !== null && fallbackDraw !== null && fallbackAway !== null) {
+      probContainer.style.display = 'block';
+      probContainer.innerHTML = `
+        <div class="prob-header" style="display:flex; justify-content:space-between; align-items:center">
+          <span>Probabilidades de triunfo</span>
+          <span class="live-status-label error" style="color: #ff9800; font-weight: bold; font-size: 0.72rem;">En vivo no actualizado ⚠️</span>
+        </div>
+        <div class="prob-labels">
+          <span class="prob-label-val prob-val-home">L: ${parseFloat(fallbackHome).toFixed(1)}%</span>
+          <span class="prob-label-val prob-val-draw">E: ${parseFloat(fallbackDraw).toFixed(1)}%</span>
+          <span class="prob-label-val prob-val-away">V: ${parseFloat(fallbackAway).toFixed(1)}%</span>
+        </div>
+        <div class="prob-bar-track">
+          <div class="prob-bar-fill-home" style="width: ${fallbackHome}%; background-color: ${getTeamColor(m.teamA)}; background-image: none;"></div>
+          <div class="prob-bar-fill-draw" style="width: ${fallbackDraw}%"></div>
+          <div class="prob-bar-fill-away" style="width: ${fallbackAway}%; background-color: ${getTeamColor(m.teamB)}; background-image: none;"></div>
+        </div>
+      `;
+    }
+    if (scoreContainer) {
+      scoreContainer.style.display = 'none';
+    }
+  }
+  
+  try {
+    const res = await fetch(`api/get_live_forecast.php?match_id=${m.id}&t=${Date.now()}`, {
+      method: 'POST'
+    });
+    if (!res.ok) throw new Error('API response not OK');
+    const data = await res.json();
+    
+    if (data.error) {
+      console.warn(`API returned error for match ${m.id}:`, data.error);
+      showFallback();
+      return;
+    }
+    
+    const match = data.matches?.[0] || data.data?.matches?.[0] || data;
+    const prediction = match?.prediction;
+    
+    if (prediction && prediction.probabilities) {
+      const probs = prediction.probabilities;
+      
+      if (probContainer) {
+        probContainer.style.display = 'block';
+        probContainer.innerHTML = `
+          <div class="prob-header" style="display:flex; justify-content:space-between; align-items:center">
+            <span>Probabilidades de triunfo</span>
+            <span class="live-status-label">En Vivo 🟢</span>
+          </div>
+          <div class="prob-labels">
+            <span class="prob-label-val prob-val-home">L: ${parseFloat(probs.home).toFixed(1)}%</span>
+            <span class="prob-label-val prob-val-draw">E: ${parseFloat(probs.draw).toFixed(1)}%</span>
+            <span class="prob-label-val prob-val-away">V: ${parseFloat(probs.away).toFixed(1)}%</span>
+          </div>
+          <div class="prob-bar-track">
+            <div class="prob-bar-fill-home" style="width: ${probs.home}%; background-color: ${getTeamColor(m.teamA)}; background-image: none;"></div>
+            <div class="prob-bar-fill-draw" style="width: ${probs.draw}%"></div>
+            <div class="prob-bar-fill-away" style="width: ${probs.away}%; background-color: ${getTeamColor(m.teamB)}; background-image: none;"></div>
+          </div>
+        `;
+      }
+      
+      let scores = match.most_likely_scores || match.mostLikelyScores || match.scores || match.score_options || match.scoreOptions || match.top_scores || match.topScores || prediction.most_likely_scores || prediction.mostLikelyScores || prediction.scores || prediction.score_options || prediction.scoreOptions || prediction.top_scores || prediction.topScores;
+      
+      if (scoreContainer && scores && Array.isArray(scores) && scores.length > 0) {
+        const sortedScores = [...scores].sort((a, b) => {
+          if (a.rank !== undefined && b.rank !== undefined) {
+            return a.rank - b.rank;
+          }
+          return (b.probability || 0) - (a.probability || 0);
+        });
+        
+        const topScores = sortedScores.slice(0, 3);
+        
+        scoreContainer.style.display = 'block';
+        let scoresHtml = `
+          <div class="likely-scores-title">Marcadores Probables</div>
+        `;
+        topScores.forEach((s, idx) => {
+          const rank = s.rank || (idx + 1);
+          const prob = s.probability !== undefined ? `${parseFloat(s.probability).toFixed(1)}%` : '–';
+          scoresHtml += `
+            <div class="likely-score-row">
+              <span class="likely-score-rank">Rango #${rank}</span>
+              <span class="likely-score-val">${s.score || (s.scoreA + '-' + s.scoreB)}</span>
+              <span class="likely-score-prob">${prob}</span>
+            </div>
+          `;
+        });
+        scoreContainer.innerHTML = scoresHtml;
+      } else {
+        if (scoreContainer) {
+          scoreContainer.style.display = 'none';
+        }
+      }
+    } else {
+      showFallback();
+    }
+  } catch (err) {
+    console.error(`Error updating live forecast for match ${m.id}:`, err);
+    showFallback();
+  }
+}
+
+
+
+

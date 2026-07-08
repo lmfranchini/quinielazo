@@ -1,0 +1,79 @@
+<?php
+require_once 'config.php';
+
+if (currentUser()) {
+    header('Location: index.php');
+    exit;
+}
+
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    if (!$username || !$password) {
+        $error = 'Por favor ingresa tu nombre y contraseña.';
+    } else {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT * FROM `User` WHERE LOWER(username) = LOWER(?)");
+        $stmt->execute([$username]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            $error = 'Usuario no registrado. Si deseas participar, por favor contacta al administrador en el WhatsApp: ' . REGISTRATION_CONTACT_WHATSAPP . '.';
+        } else {
+            if ($user['password'] !== $password) {
+                $error = 'Contraseña incorrecta.';
+            } else {
+                $_SESSION['user_id'] = $user['id'];
+                header('Location: index.php');
+                exit;
+            }
+        }
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iniciar Sesión – Pronosticador Mundial 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=1.0" />
+</head>
+<body>
+  <div class="login-page fade-in">
+    <div class="login-card">
+      <div class="login-badge">🔮</div>
+      <h1 class="login-title">Motor de Pronósticos</h1>
+      <p class="login-subtitle">Ingresa con tus credenciales de la Quiniela</p>
+
+      <?php if ($error): ?>
+        <div class="error-msg"><?= htmlspecialchars($error) ?></div>
+      <?php endif; ?>
+
+      <form method="POST" action="login.php">
+        <div class="form-group">
+          <label for="username">Nombre de Usuario</label>
+          <input type="text" id="username" name="username" class="form-input"
+                 placeholder="Tu apodo en la quiniela..." required
+                 value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" />
+        </div>
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" name="password" class="form-input"
+                 placeholder="Tu contraseña personal" required />
+        </div>
+        <button type="submit" class="btn-login">Ingresar al Portal ⚡</button>
+      </form>
+
+      <p class="login-note">
+        Si tienes problemas para acceder, envía un mensaje de WhatsApp al <?= htmlspecialchars(REGISTRATION_CONTACT_WHATSAPP) ?>.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
