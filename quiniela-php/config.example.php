@@ -359,7 +359,7 @@ function getGroupStandings($db) {
         }
     }
     
-    $matches = $db->query("SELECT teamA, teamB, scoreA, scoreB, status, isFinished FROM `Match`")->fetchAll();
+    $matches = $db->query("SELECT teamA, teamB, scoreA, scoreB, status, isFinished FROM `Match` WHERE id <= 72")->fetchAll();
     
     foreach ($matches as $m) {
         $teamA = $m['teamA'];
