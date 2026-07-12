@@ -4,7 +4,6 @@ $user = requireLogin();
 
 $db = getDB();
 
-// --- Calcular KPIs del Predictor ---
 $kpiMatches = $db->query("
     SELECT m.id, m.scoreA, m.scoreB, fc.pick, fso.scoreA as predA, fso.scoreB as predB
     FROM `Match` m
@@ -12,10 +11,13 @@ $kpiMatches = $db->query("
         SELECT fc1.matchId, fc1.runId, fc1.pick
         FROM `ForecastConsensus` fc1
         INNER JOIN (
-            SELECT matchId, MIN(runId) as min_runId
-            FROM `ForecastConsensus`
-            GROUP BY matchId
-        ) fc2 ON fc1.matchId = fc2.matchId AND fc1.runId = fc2.min_runId
+            SELECT fc_sub.matchId, MAX(fc_sub.runId) as max_runId
+            FROM `ForecastConsensus` fc_sub
+            INNER JOIN `Match` m_sub ON fc_sub.matchId = m_sub.id
+            WHERE fc_sub.createdAt <= m_sub.date
+              AND NOT (fc_sub.probHome = 34.24 AND fc_sub.probDraw = 31.51 AND fc_sub.probAway = 34.25)
+            GROUP BY fc_sub.matchId
+        ) fc2 ON fc1.matchId = fc2.matchId AND fc1.runId = fc2.max_runId
     ) fc ON m.id = fc.matchId
     LEFT JOIN `ForecastScoreOption` fso ON fc.matchId = fso.matchId AND fc.runId = fso.runId AND fso.rankOrder = 1
     WHERE m.isFinished = 1 OR m.status = 'FINISHED'
