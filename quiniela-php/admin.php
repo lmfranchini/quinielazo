@@ -49,10 +49,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 79 => 0, // 1A
                 85 => 1, // 1B
                 81 => 2, // 1D
-                74 => 3, // 1E
+                75 => 3, // 1E
                 82 => 4, // 1G
-                77 => 5, // 1I
-                87 => 6, // 1K
+                78 => 5, // 1I
+                88 => 6, // 1K
                 80 => 7  // 1L
             ];
             
@@ -105,31 +105,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     try {
         $originalKnockoutPlaceholders = [
             73 => ['teamA' => '2A', 'teamB' => '2B'],
-            74 => ['teamA' => '1E', 'teamB' => '3A/B/C/D/F'],
-            75 => ['teamA' => '1F', 'teamB' => '2C'],
-            76 => ['teamA' => '1C', 'teamB' => '2F'],
-            77 => ['teamA' => '1I', 'teamB' => '3C/D/F/G/H'],
-            78 => ['teamA' => '2E', 'teamB' => '2I'],
+            74 => ['teamA' => '1C', 'teamB' => '2F'],
+            75 => ['teamA' => '1E', 'teamB' => '3A/B/C/D/F'],
+            76 => ['teamA' => '1F', 'teamB' => '2C'],
+            77 => ['teamA' => '2E', 'teamB' => '2I'],
+            78 => ['teamA' => '1I', 'teamB' => '3C/D/F/G/H'],
             79 => ['teamA' => '1A', 'teamB' => '3C/E/F/H/I'],
             80 => ['teamA' => '1L', 'teamB' => '3E/H/I/J/K'],
             81 => ['teamA' => '1D', 'teamB' => '3B/E/F/I/J'],
             82 => ['teamA' => '1G', 'teamB' => '3A/E/H/I/J'],
-            83 => ['teamA' => '2K', 'teamB' => '2L'],
-            84 => ['teamA' => '1H', 'teamB' => '2J'],
+            83 => ['teamA' => '1H', 'teamB' => '2J'],
+            84 => ['teamA' => '2K', 'teamB' => '2L'],
             85 => ['teamA' => '1B', 'teamB' => '3E/F/G/I/J'],
             86 => ['teamA' => '1J', 'teamB' => '2H'],
-            87 => ['teamA' => '1K', 'teamB' => '3D/E/I/J/L'],
-            88 => ['teamA' => '2D', 'teamB' => '2G'],
+            87 => ['teamA' => '2D', 'teamB' => '2G'],
+            88 => ['teamA' => '1K', 'teamB' => '3D/E/I/J/L'],
             
             // 8vos (Round of 16)
-            89 => ['teamA' => 'Ganador 74', 'teamB' => 'Ganador 77'],
-            90 => ['teamA' => 'Ganador 73', 'teamB' => 'Ganador 75'],
-            91 => ['teamA' => 'Ganador 76', 'teamB' => 'Ganador 78'],
+            89 => ['teamA' => 'Ganador 75', 'teamB' => 'Ganador 78'],
+            90 => ['teamA' => 'Ganador 73', 'teamB' => 'Ganador 76'],
+            91 => ['teamA' => 'Ganador 74', 'teamB' => 'Ganador 77'],
             92 => ['teamA' => 'Ganador 79', 'teamB' => 'Ganador 80'],
-            93 => ['teamA' => 'Ganador 83', 'teamB' => 'Ganador 84'],
-            94 => ['teamA' => 'Ganador 81', 'teamB' => 'Ganador 82'],
-            95 => ['teamA' => 'Ganador 86', 'teamB' => 'Ganador 88'],
-            96 => ['teamA' => 'Ganador 85', 'teamB' => 'Ganador 87'],
+            93 => ['teamA' => 'Ganador 84', 'teamB' => 'Ganador 83'],
+            94 => ['teamA' => 'Ganador 82', 'teamB' => 'Ganador 81'],
+            95 => ['teamA' => 'Ganador 87', 'teamB' => 'Ganador 86'],
+            96 => ['teamA' => 'Ganador 85', 'teamB' => 'Ganador 88'],
             
             // Cuartos (Quarter-finals)
             97 => ['teamA' => 'Ganador 89', 'teamB' => 'Ganador 90'],
